@@ -1484,14 +1484,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@fjell/core@npm:^4.3":
-  version: 4.3.2
-  resolution: "@fjell/core@npm:4.3.2"
+"@fjell/core@npm:^4.3.3":
+  version: 4.3.3
+  resolution: "@fjell/core@npm:4.3.3"
   dependencies:
-    "@fjell/logging": "npm:^4.3"
+    "@fjell/logging": "npm:^4.3.8"
     flatted: "npm:^3.3.3"
     luxon: "npm:^3.5.0"
-  checksum: 10c0/63490c0999b597895ddc4d13bbabf70605c9b9210368025b2618cb6f46bc72b3dd9039b1fbb9f67f5ac8fbb5132f571b0201ea9691925177e99dd63c2c901deb
+  checksum: 10c0/a56520b1f9787d3a732f4dc4c8a2792bc6e444d2d5548f8b81be4f0158ca05c63be0cb9d9f53f4e725223381f5f52f6cd02d4a85566079d9b0a498e3927a03dc
   languageName: node
   linkType: hard
 
@@ -1502,8 +1502,8 @@ __metadata:
     "@babel/preset-env": "npm:^7.26.9"
     "@babel/preset-react": "npm:^7.26.3"
     "@babel/preset-typescript": "npm:^7.26.0"
-    "@fjell/lib": "npm:^4.3"
-    "@fjell/logging": "npm:^4.3"
+    "@fjell/lib": "npm:^4.3.6"
+    "@fjell/logging": "npm:^4.3.8"
     "@google-cloud/firestore": "npm:^7.11.0"
     "@tsconfig/recommended": "npm:^1.0.8"
     "@types/cors": "npm:^2.8.17"
@@ -1539,12 +1539,12 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@fjell/lib@npm:^4.3":
-  version: 4.3.3
-  resolution: "@fjell/lib@npm:4.3.3"
+"@fjell/lib@npm:^4.3.6":
+  version: 4.3.6
+  resolution: "@fjell/lib@npm:4.3.6"
   dependencies:
-    "@fjell/core": "npm:^4.3"
-    "@fjell/logging": "npm:^4.3"
+    "@fjell/core": "npm:^4.3.3"
+    "@fjell/logging": "npm:^4.3.8"
     "@google-cloud/firestore": "npm:^7.11.0"
     "@google-cloud/storage": "npm:^7.15.2"
     dayjs: "npm:^1.11.13"
@@ -1553,11 +1553,11 @@ __metadata:
     sequelize: "npm:^6.37.5"
     specifier-resolution-node: "npm:^1.1.4"
     winston: "npm:^3.17.0"
-  checksum: 10c0/983e566d173e95d293067be6ab7e4724bbbb3d59f88713cdbc64394dcb68dfbfe201b6ca43e717e5b071953f43c7b1b4b3d51e9d56f3b1c09ffa56cd66a4f6ad
+  checksum: 10c0/be36f921f4d68062ebcb8afc51839a6bf0cc8fb57ba803884d662959e00cb6f37ab21b9c67370f17d3cfc1277b86a51623ef63c1f48e60e5a13af22609aaec47
   languageName: node
   linkType: hard
 
-"@fjell/logging@npm:^4.3":
+"@fjell/logging@npm:^4.3.8":
   version: 4.3.8
   resolution: "@fjell/logging@npm:4.3.8"
   dependencies:
