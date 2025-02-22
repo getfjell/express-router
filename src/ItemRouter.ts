@@ -173,13 +173,13 @@ export class ItemRouter<
 
   /* istanbul ignore next */
   protected configureItemActions(): Record<string, ActionMethod> {
-    this.logger.info('ARouter - No Item Actions Configured');
+    this.logger.debug('ARouter - No Item Actions Configured');
     return {};
   }
 
   /* istanbul ignore next */
   protected configureAllActions(): Record<string, AllActionMethods> {
-    this.logger.info('ARouter - No All Actions Configured');
+    this.logger.debug('ARouter - No All Actions Configured');
     return {};
   }
 
