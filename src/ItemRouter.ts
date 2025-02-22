@@ -114,7 +114,7 @@ export class ItemRouter<
     router.post('/', this.createItem);
 
     const allActions = this.configureAllActions();
-    this.logger.info('All Actions supplied to Router', { allActions });
+    this.logger.debug('All Actions supplied to Router', { allActions });
     if (allActions) {
       Object.keys(allActions).forEach((actionKey) => {
         this.logger.default('Configuring All Action', { actionKey });
@@ -129,7 +129,7 @@ export class ItemRouter<
     itemRouter.delete('/', this.deleteItem);
 
     this.itemActions = this.configureItemActions();
-    this.logger.info('Item Actions supplied to Router', { itemActions:this.itemActions });
+    this.logger.debug('Item Actions supplied to Router', { itemActions:this.itemActions });
     if (this.itemActions) {
       Object.keys(this.itemActions).forEach((actionKey) => {
         this.logger.default('Configuring Item Action', { actionKey });
