@@ -1,6 +1,6 @@
 {
     "name": "@fjell/express-router",
-    "version": "4.3.7",
+    "version": "4.3.8",
     "license": "UNLICENSED",
     "description": "Express Router for Fjell",
     "engines": {
@@ -23,8 +23,8 @@
         "test": "yarn run lint && NODE_OPTIONS='--experimental-require-module' yarn run jest --coverage"
     },
     "dependencies": {
-        "@fjell/lib": "^4.3.6",
-        "@fjell/logging": "^4.3.8",
+        "@fjell/lib": "^4.3",
+        "@fjell/logging": "^4.3",
         "@google-cloud/firestore": "^7.11.0",
         "cors": "^2.8.5",
         "dayjs": "^1.11.13",

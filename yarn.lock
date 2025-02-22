@@ -1502,8 +1502,8 @@ __metadata:
     "@babel/preset-env": "npm:^7.26.9"
     "@babel/preset-react": "npm:^7.26.3"
     "@babel/preset-typescript": "npm:^7.26.0"
-    "@fjell/lib": "npm:^4.3.6"
-    "@fjell/logging": "npm:^4.3.8"
+    "@fjell/lib": "npm:^4.3"
+    "@fjell/logging": "npm:^4.3"
     "@google-cloud/firestore": "npm:^7.11.0"
     "@tsconfig/recommended": "npm:^1.0.8"
     "@types/cors": "npm:^2.8.17"
@@ -1539,7 +1539,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@fjell/lib@npm:^4.3.6":
+"@fjell/lib@npm:^4.3":
   version: 4.3.6
   resolution: "@fjell/lib@npm:4.3.6"
   dependencies:
@@ -1557,7 +1557,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@fjell/logging@npm:^4.3.8":
+"@fjell/logging@npm:^4.3, @fjell/logging@npm:^4.3.8":
   version: 4.3.8
   resolution: "@fjell/logging@npm:4.3.8"
   dependencies:
