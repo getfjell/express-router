@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars, no-undefined */
 import { ComKey, Item, LocKey, LocKeyArray, PriKey, UUID } from "@fjell/core";
-import { Operations } from "@fjell/lib";
+import { NotFoundError, Operations } from "@fjell/lib";
 import { Request, Response, Router } from "express";
 import { ActionMethod, AllActionMethods, ItemRouter } from "@/ItemRouter";
 
@@ -270,14 +270,31 @@ describe("ItemRouter", () => {
   });
 
   it("should return 404 if item is not found in getItem", async () => {
-    const error = new Error("Item not found");
+    const error = new NotFoundError("Item not found", { kta: ['test', 'container'], scopes: [] }, comKey);
     lib.get = jest.fn().mockRejectedValue(error);
     res.locals = { testPk: "1-1-1-1-1" };
 
     const response = await router['getItem'](req as Request, res as Response);
     expect(lib.get).toHaveBeenCalledWith(comKey);
     expect(res.status).toHaveBeenCalledWith(404);
-    expect(res.json).toHaveBeenCalledWith(error);
+    expect(res.json).toHaveBeenCalledWith({
+      ik: comKey,
+      message: "Item Not Found",
+    });
+  });
+
+  it("should return 500 if somthing unknown fails", async () => {
+    const error = new Error("Something Broke");
+    lib.get = jest.fn().mockRejectedValue(error);
+    res.locals = { testPk: "1-1-1-1-1" };
+
+    const response = await router['getItem'](req as Request, res as Response);
+    expect(lib.get).toHaveBeenCalledWith(comKey);
+    expect(res.status).toHaveBeenCalledWith(500);
+    expect(res.json).toHaveBeenCalledWith({
+      ik: comKey,
+      message: "General Error",
+    });
   });
 
   describe("updateItem", () => {

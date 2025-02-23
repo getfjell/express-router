@@ -9,7 +9,7 @@ import {
   PriKey,
   validatePK
 } from "@fjell/core";
-import { Operations } from "@fjell/lib";
+import { NotFoundError, Operations } from "@fjell/lib";
 import deepmerge from "deepmerge";
 import { Request, RequestHandler, Response, Router } from "express";
 import LibLogger from "./logger";
@@ -222,11 +222,23 @@ export class ItemRouter<
     this.logger.default('Getting Item', { query: req.query, params: req.params, locals: res.locals });
     const ik = this.getIk(res);
     try {
+      // TODO: What error does validate PK throw, when can that fail?
       const item = validatePK(await this.lib.get(ik), this.getPkType());
       return res.json(item);
     } catch (err: any) {
-      this.logger.error('Error in Get Item Returning 404', { message: err?.message, stack: err?.stack });
-      return res.status(404).json(err);
+      if (err instanceof NotFoundError) {
+        this.logger.error('Item Not Found', { ik, message: err?.message, stack: err?.stack });
+        return res.status(404).json({
+          ik,
+          message: "Item Not Found",
+        });
+      } else {
+        this.logger.error('General Error', { ik, message: err?.message, stack: err?.stack });
+        return res.status(500).json({
+          ik,
+          message: "General Error",
+        });
+      }
     }
   }
 
