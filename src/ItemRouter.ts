@@ -100,7 +100,7 @@ export class ItemRouter<
     }
     try {
       const item =
-          validatePK(await this.lib.get(ik), this.getPkType()) as Item<S, L1, L2, L3, L4, L5>;
+        validatePK(await this.lib.get(ik), this.getPkType()) as Item<S, L1, L2, L3, L4, L5>;
       return res.json(await this.itemActions[actionKey](req, res, item, req.params, req.body));
     } catch (err: any) {
       this.logger.error('Error in Item Action', { message: err?.message, stack: err?.stack });
@@ -129,7 +129,7 @@ export class ItemRouter<
     itemRouter.delete('/', this.deleteItem);
 
     this.itemActions = this.configureItemActions();
-    this.logger.debug('Item Actions supplied to Router', { itemActions:this.itemActions });
+    this.logger.debug('Item Actions supplied to Router', { itemActions: this.itemActions });
     if (this.itemActions) {
       Object.keys(this.itemActions).forEach((actionKey) => {
         this.logger.default('Configuring Item Action', { actionKey });
@@ -184,7 +184,7 @@ export class ItemRouter<
   }
 
   /* istanbul ignore next */
-  public getRouter() {
+  public getRouter(): Router {
     const router = Router();
     this.configure(router);
     return router;

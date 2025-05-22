@@ -3,27 +3,27 @@ import { PItemRouter } from "@/PItemRouter";
 import { Item, PriKey, UUID } from "@fjell/core";
 import { Primary } from "@fjell/lib";
 import { Request, Response } from "express";
-import { jest } from "@jest/globals";
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-jest.mock('@fjell/logging', () => {
-  return {
-    get: jest.fn().mockReturnThis(),
-    getLogger: jest.fn().mockReturnThis(),
-    default: jest.fn(),
-    error: jest.fn(),
-    warning: jest.fn(),
-    info: jest.fn(),
-    debug: jest.fn(),
-    trace: jest.fn(),
-    emergency: jest.fn(),
-    alert: jest.fn(),
-    critical: jest.fn(),
-    notice: jest.fn(),
-    time: jest.fn().mockReturnThis(),
-    end: jest.fn(),
-    log: jest.fn(),
+vi.mock('@fjell/logging', () => ({
+  default: {
+    get: vi.fn().mockReturnThis(),
+    getLogger: vi.fn().mockReturnThis(),
+    default: vi.fn(),
+    error: vi.fn(),
+    warning: vi.fn(),
+    info: vi.fn(),
+    debug: vi.fn(),
+    trace: vi.fn(),
+    emergency: vi.fn(),
+    alert: vi.fn(),
+    critical: vi.fn(),
+    notice: vi.fn(),
+    time: vi.fn().mockReturnThis(),
+    end: vi.fn(),
+    log: vi.fn(),
   }
-});
+}));
 
 type TestItem = Item<"test">;
 
@@ -41,16 +41,16 @@ const testItem: TestItem = {
 
 describe("PItemFSRouter", () => {
   let router: PItemRouter<TestItem, "test">;
-  let mockLib: jest.Mocked<Primary.Operations<TestItem, "test">>;
+  let mockLib: any;
   let req: Partial<Request>;
   let res: Partial<Response>;
 
   beforeEach(() => {
     mockLib = {
-      create: jest.fn(),
-      all: jest.fn(),
-      find: jest.fn()
-    } as unknown as jest.Mocked<Primary.Operations<TestItem, "test">>;
+      create: vi.fn(),
+      all: vi.fn(),
+      find: vi.fn()
+    };
     router = new PItemRouter(mockLib, "test");
     req = {
       params: {},
@@ -60,9 +60,9 @@ describe("PItemFSRouter", () => {
     res = {
       locals: {},
       // @ts-ignore
-      json: jest.fn(),
+      json: vi.fn(),
       // @ts-ignore
-      status: jest.fn().mockReturnThis()
+      status: vi.fn().mockReturnThis()
     };
   });
 
@@ -98,12 +98,12 @@ describe("PItemFSRouter", () => {
       mockLib.find.mockResolvedValue(mockItems);
       req.query = {
         finder: 'testFinder',
-        finderParams: JSON.stringify({param: 'value'})
+        finderParams: JSON.stringify({ param: 'value' })
       };
 
       await router['findItems'](req as Request, res as Response);
 
-      expect(mockLib.find).toHaveBeenCalledWith('testFinder', {param: 'value'});
+      expect(mockLib.find).toHaveBeenCalledWith('testFinder', { param: 'value' });
       expect(res.json).toHaveBeenCalledWith(mockItems);
     });
 

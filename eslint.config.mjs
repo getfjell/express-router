@@ -34,7 +34,7 @@ export default [{
     }],
 
     "max-depth": ["error", 4],
-    "max-params": ["error", 4],
+    "max-params": ["error", 7],
     "max-lines": ["error", 500],
 
     "no-multiple-empty-lines": ["error", {

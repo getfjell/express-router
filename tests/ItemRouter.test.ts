@@ -3,27 +3,28 @@ import { ComKey, Item, LocKey, LocKeyArray, PriKey, UUID } from "@fjell/core";
 import { NotFoundError, Operations } from "@fjell/lib";
 import { Request, Response, Router } from "express";
 import { ActionMethod, AllActionMethods, ItemRouter } from "@/ItemRouter";
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-jest.mock('@fjell/logging', () => {
-  return {
-    get: jest.fn().mockReturnThis(),
-    getLogger: jest.fn().mockReturnThis(),
-    default: jest.fn(),
-    error: jest.fn(),
-    warning: jest.fn(),
-    info: jest.fn(),
-    debug: jest.fn(),
-    trace: jest.fn(),
-    emergency: jest.fn(),
-    alert: jest.fn(),
-    critical: jest.fn(),
-    notice: jest.fn(),
-    time: jest.fn().mockReturnThis(),
-    end: jest.fn(),
-    log: jest.fn(),
+vi.mock('@fjell/logging', () => ({
+  default: {
+    get: vi.fn().mockReturnThis(),
+    getLogger: vi.fn().mockReturnThis(),
+    default: vi.fn(),
+    error: vi.fn(),
+    warning: vi.fn(),
+    info: vi.fn(),
+    debug: vi.fn(),
+    trace: vi.fn(),
+    emergency: vi.fn(),
+    alert: vi.fn(),
+    critical: vi.fn(),
+    notice: vi.fn(),
+    time: vi.fn().mockReturnThis(),
+    end: vi.fn(),
+    log: vi.fn(),
   }
-});
-jest.mock("@fjell/lib");
+}));
+vi.mock("@fjell/lib");
 
 type TestItem = Item<"test", "container">;
 
@@ -49,7 +50,7 @@ const testItem: TestItem = {
 class TestItemRouter extends ItemRouter<"test", "container"> {
   protected configureItemActions(): Record<string, ActionMethod> {
     return {
-      // eslint-disable-next-line max-params
+
       customAction: async (req, res, item, params, body) => {
         return { ...item, customAction: true };
       }
@@ -95,15 +96,15 @@ class TestItemRouterNoActions extends ItemRouter<"test", "container"> {
 
 describe("ItemRouter", () => {
   let router: TestItemRouter;
-  let lib: jest.Mocked<Operations<Item<"test", "container">, "test", "container">>;
+  let lib: any;
   let req: Partial<Request>;
   let res: Partial<Response>;
 
   beforeEach(() => {
     lib = {
-      get: jest.fn(),
-      remove: jest.fn(),
-    } as unknown as jest.Mocked<Operations<Item<"test", "container">, "test", "container">>;
+      get: vi.fn(),
+      remove: vi.fn(),
+    };
     router = new TestItemRouter(lib, "test");
     router['configure'](Router());
     req = {
@@ -113,8 +114,8 @@ describe("ItemRouter", () => {
     };
     res = {
       locals: {},
-      json: jest.fn(),
-      status: jest.fn().mockReturnThis()
+      json: vi.fn(),
+      status: vi.fn().mockReturnThis()
     };
   });
 
@@ -141,13 +142,13 @@ describe("ItemRouter", () => {
 
   it("should configure the router correctly", () => {
     const expressRouter = Router();
-    const configureSpy = jest.spyOn(router as any, "configure");
+    const configureSpy = vi.spyOn(router as any, "configure");
     router.getRouter();
     expect(configureSpy).toHaveBeenCalled();
   });
 
   it("should validate primary key value correctly", () => {
-    const next = jest.fn();
+    const next = vi.fn();
     req.params = { testPk: "1-1-1-1-1" };
     router["validatePrimaryKeyValue"](req as Request, res as Response, next);
     expect(next).toHaveBeenCalled();
@@ -156,7 +157,7 @@ describe("ItemRouter", () => {
   });
 
   it("should return error for invalid primary key value", () => {
-    const next = jest.fn();
+    const next = vi.fn();
     req.params = { testPk: "undefined" };
     router["validatePrimaryKeyValue"](req as Request, res as Response, next);
     expect(res.status).toHaveBeenCalledWith(500);
@@ -172,7 +173,7 @@ describe("ItemRouter", () => {
   });
 
   it("should handle all actions", async () => {
-    const nextFunction = jest.fn();
+    const nextFunction = vi.fn();
     const allActions = router["configureAllActions"]();
     const allAction = allActions["allAction"][0];
     await allAction(req as Request, res as Response, nextFunction);
@@ -254,14 +255,14 @@ describe("ItemRouter", () => {
   });
 
   it("should call getIk in deleteItem", async () => {
-    const getIkSpy = jest.spyOn(router as any, "getIk");
+    const getIkSpy = vi.spyOn(router as any, "getIk");
     lib.remove.mockResolvedValue(testItem);
     await router['deleteItem'](req as Request, res as Response);
     expect(getIkSpy).toHaveBeenCalled();
   });
 
   it("should get an item", async () => {
-    lib.get = jest.fn().mockResolvedValue(testItem);
+    lib.get = vi.fn().mockResolvedValue(testItem);
     res.locals = { testPk: "1-1-1-1-1" };
 
     const response = await router['getItem'](req as Request, res as Response);
@@ -271,7 +272,7 @@ describe("ItemRouter", () => {
 
   it("should return 404 if item is not found in getItem", async () => {
     const error = new NotFoundError("Item not found", { kta: ['test', 'container'], scopes: [] }, comKey);
-    lib.get = jest.fn().mockRejectedValue(error);
+    lib.get = vi.fn().mockRejectedValue(error);
     res.locals = { testPk: "1-1-1-1-1" };
 
     const response = await router['getItem'](req as Request, res as Response);
@@ -285,7 +286,7 @@ describe("ItemRouter", () => {
 
   it("should return 500 if somthing unknown fails", async () => {
     const error = new Error("Something Broke");
-    lib.get = jest.fn().mockRejectedValue(error);
+    lib.get = vi.fn().mockRejectedValue(error);
     res.locals = { testPk: "1-1-1-1-1" };
 
     const response = await router['getItem'](req as Request, res as Response);
@@ -304,7 +305,7 @@ describe("ItemRouter", () => {
         stuff: false
       };
 
-      lib.update = jest.fn().mockResolvedValue(updatedItem);
+      lib.update = vi.fn().mockResolvedValue(updatedItem);
       req.body = updatedItem;
       res.locals = { testPk: "1-1-1-1-1" };
 
@@ -314,8 +315,8 @@ describe("ItemRouter", () => {
     });
 
     it("should call getIk in updateItem", async () => {
-      const getIkSpy = jest.spyOn(router as any, "getIk");
-      lib.update = jest.fn().mockResolvedValue(testItem);
+      const getIkSpy = vi.spyOn(router as any, "getIk");
+      lib.update = vi.fn().mockResolvedValue(testItem);
       req.body = testItem;
       res.locals = { testPk: "1-1-1-1-1" };
 
@@ -350,10 +351,10 @@ describe("ItemRouter", () => {
       ).toThrow('Method not implemented in an abstract router');
     });
   });
-  
+
   describe('postItemAction', () => {
     it('should call the item action', async () => {
-      lib.get = jest.fn().mockResolvedValue(testItem);
+      lib.get = vi.fn().mockResolvedValue(testItem);
 
       // @ts-ignore
       req.path = '/test/123/customAction';
@@ -362,7 +363,7 @@ describe("ItemRouter", () => {
     });
 
     it('test calling an action that doesnt exist', async () => {
-      lib.get = jest.fn().mockResolvedValue(testItem);
+      lib.get = vi.fn().mockResolvedValue(testItem);
 
       // @ts-ignore
       req.path = '/test/123/customActionMissing';
