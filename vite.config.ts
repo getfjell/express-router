@@ -14,6 +14,9 @@ export default defineVitestConfig({
       appPath: './src/index.ts',
       exportName: 'viteNodeApp',
       tsCompiler: 'swc',
+      swcOptions: {
+        sourceMaps: true,
+      },
     }),
     // visualizer({
     //     template: 'network',
@@ -36,18 +39,24 @@ export default defineVitestConfig({
     target: 'esnext',
     outDir: 'dist',
     lib: {
-      entry: './src/index.ts',
-      formats: ['es'],
+      entry: path.resolve(__dirname, './src/index.ts'),
     },
     rollupOptions: {
       input: 'src/index.ts',
-      output: {
-        format: 'esm',
-        entryFileNames: '[name].js',
-        preserveModules: true,
-        exports: 'named',
-        sourcemap: 'inline',
-      },
+      output: [
+        {
+          format: 'esm',
+          entryFileNames: '[name].js',
+          preserveModules: true,
+          exports: 'named',
+        },
+        {
+          format: 'cjs',
+          entryFileNames: '[name].cjs',
+          preserveModules: true,
+          exports: 'named',
+        },
+      ],
     },
     // Make sure Vite generates ESM-compatible code
     modulePreload: false,
