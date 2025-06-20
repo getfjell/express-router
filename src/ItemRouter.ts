@@ -30,6 +30,17 @@ export type ActionMethod = <
 // TODO: body is in the request, it's not needed in the parameters
 export type AllActionMethods = Array<RequestHandler>;
 
+// TODO: body is in the request, it's not needed in the parameters
+export type FacetMethod = <
+  S extends string,
+  L1 extends string = never,
+  L2 extends string = never,
+  L3 extends string = never,
+  L4 extends string = never,
+  L5 extends string = never
+>(req: Request, res: Response, item: Item<S, L1, L2, L3, L4, L5>, params: any) =>
+  Promise<any>;
+
 export class ItemRouter<
   S extends string,
   L1 extends string = never,
@@ -45,6 +56,7 @@ export class ItemRouter<
   private childRouters: Record<string, Router> = {};
   private logger;
   private itemActions: Record<string, ActionMethod> | undefined;
+  private itemFacets: Record<string, FacetMethod> | undefined;
 
   constructor(
     lib: Operations<Item<S, L1, L2, L3, L4, L5>, S, L1, L2, L3, L4, L5>,
@@ -108,6 +120,24 @@ export class ItemRouter<
     }
   }
 
+  protected getItemFacet = async (req: Request, res: Response) => {
+    this.logger.default('Getting Item', { query: req?.query, params: req?.params, locals: res?.locals });
+    const ik = this.getIk(res);
+    const facetKey = req.path.substring(req.path.lastIndexOf('/') + 1);
+    if (!this.itemFacets) {
+      this.logger.error('Item Facets are not configured');
+      return res.status(500).json({ error: 'Item Facets are not configured' });
+    }
+    try {
+      const item =
+        validatePK(await this.lib.get(ik), this.getPkType()) as Item<S, L1, L2, L3, L4, L5>;
+      return await this.itemFacets[facetKey](req, res, item, req.params);
+    } catch (err: any) {
+      this.logger.error('Error in Item Facet', { message: err?.message, stack: err?.stack });
+      return res.status(500).json(err);
+    }
+  }
+
   private configure = (router: Router) => {
     this.logger.default('Configuring Router', { pkType: this.getPkType() });
     router.get('/', this.findItems);
@@ -135,6 +165,16 @@ export class ItemRouter<
         this.logger.default('Configuring Item Action', { actionKey });
         // TODO: Ok, this is a bit of a hack, but we need to customize the types of the request handlers
         itemRouter.post(`/${actionKey}`, this.postItemAction)
+      });
+    }
+
+    this.itemFacets = this.configureItemFacets();
+    this.logger.debug('Item Facets supplied to Router', { itemFacets: this.itemFacets });
+    if (this.itemFacets) {
+      Object.keys(this.itemFacets).forEach((facetKey) => {
+        this.logger.default('Configuring Item Facet', { facetKey });
+        // TODO: Ok, this is a bit of a hack, but we need to customize the types of the request handlers
+        itemRouter.get(`/${facetKey}`, this.getItemFacet)
       });
     }
 
@@ -174,6 +214,12 @@ export class ItemRouter<
   /* istanbul ignore next */
   protected configureItemActions(): Record<string, ActionMethod> {
     this.logger.debug('ARouter - No Item Actions Configured');
+    return {};
+  }
+
+  /* istanbul ignore next */
+  protected configureItemFacets(): Record<string, FacetMethod> {
+    this.logger.debug('ARouter - No Item Facets Configured');
     return {};
   }
 
