@@ -27,10 +27,9 @@ export class PItemRouter<T extends Item<S>, S extends string> extends ItemRouter
     let item =
       validatePK(await this.lib.create(itemToCreate), this.getPkType()) as Item<S>;
     item = await this.postCreateItem(item);
-    return res.json(item);
+    res.json(item);
   };
 
-  /* eslint-disable */
   protected findItems = async (req: Request, res: Response) => {
     logger.default('Finding Items', { query: req.query, params: req.params, locals: res.locals });
 
@@ -40,7 +39,7 @@ export class PItemRouter<T extends Item<S>, S extends string> extends ItemRouter
     const finder = query['finder'] as string;
     const finderParams = query['finderParams'] as string;
 
-    if( finder ) { 
+    if (finder) {
       // If finder is defined?  Call a finder.
       logger.default('Finding Items with a finder', { finder, finderParams });
       items = await this.lib.find(finder, JSON.parse(finderParams));
@@ -51,7 +50,7 @@ export class PItemRouter<T extends Item<S>, S extends string> extends ItemRouter
       items = await this.lib.all(itemQuery);
     }
 
-    return res.json(items.map((item: Item<S>) => validatePK(item, this.getPkType())));
+    res.json(items.map((item: Item<S>) => validatePK(item, this.getPkType())));
   };
-  /* eslint-enable */
+
 }

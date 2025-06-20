@@ -108,15 +108,16 @@ export class ItemRouter<
     const actionKey = req.path.substring(req.path.lastIndexOf('/') + 1);
     if (!this.itemActions) {
       this.logger.error('Item Actions are not configured');
-      return res.status(500).json({ error: 'Item Actions are not configured' });
+      res.status(500).json({ error: 'Item Actions are not configured' });
+      return;
     }
     try {
       const item =
         validatePK(await this.lib.get(ik), this.getPkType()) as Item<S, L1, L2, L3, L4, L5>;
-      return res.json(await this.itemActions[actionKey](req, res, item, req.params, req.body));
+      res.json(await this.itemActions[actionKey](req, res, item, req.params, req.body));
     } catch (err: any) {
       this.logger.error('Error in Item Action', { message: err?.message, stack: err?.stack });
-      return res.status(500).json(err);
+      res.status(500).json(err);
     }
   }
 
@@ -126,15 +127,16 @@ export class ItemRouter<
     const facetKey = req.path.substring(req.path.lastIndexOf('/') + 1);
     if (!this.itemFacets) {
       this.logger.error('Item Facets are not configured');
-      return res.status(500).json({ error: 'Item Facets are not configured' });
+      res.status(500).json({ error: 'Item Facets are not configured' });
+      return;
     }
     try {
       const item =
         validatePK(await this.lib.get(ik), this.getPkType()) as Item<S, L1, L2, L3, L4, L5>;
-      return await this.itemFacets[facetKey](req, res, item, req.params);
+      await this.itemFacets[facetKey](req, res, item, req.params);
     } catch (err: any) {
       this.logger.error('Error in Item Facet', { message: err?.message, stack: err?.stack });
-      return res.status(500).json(err);
+      res.status(500).json(err);
     }
   }
 
@@ -238,7 +240,7 @@ export class ItemRouter<
 
   /* istanbul ignore next */
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  protected createItem = async (req: Request, res: Response): Promise<Response<any, Record<string, any>>> => {
+  protected createItem = async (req: Request, res: Response): Promise<void> => {
     throw new Error('Method not implemented in an abstract router');
   };
 
@@ -249,17 +251,17 @@ export class ItemRouter<
     return item;
   };
 
-  protected deleteItem = async (req: Request, res: Response): Promise<Response<any, Record<string, any>>> => {
+  protected deleteItem = async (req: Request, res: Response): Promise<void> => {
     this.logger.default('Deleting Item', { query: req.query, params: req.params, locals: res.locals });
     const ik = this.getIk(res);
     const removedItem = await this.lib.remove(ik);
     const item = validatePK(removedItem, this.getPkType());
-    return res.json(item);
+    res.json(item);
   };
 
   /* eslint-disable */
   /* istanbul ignore next */
-  protected findItems = async (req: Request, res: Response): Promise<Response<any, Record<string, any>>> => {
+  protected findItems = async (req: Request, res: Response): Promise<void> => {
     throw new Error('Method not implemented in an abstract router');
   };
   /* eslint-enable */
@@ -270,17 +272,17 @@ export class ItemRouter<
     try {
       // TODO: What error does validate PK throw, when can that fail?
       const item = validatePK(await this.lib.get(ik), this.getPkType());
-      return res.json(item);
+      res.json(item);
     } catch (err: any) {
       if (err instanceof NotFoundError) {
         this.logger.error('Item Not Found', { ik, message: err?.message, stack: err?.stack });
-        return res.status(404).json({
+        res.status(404).json({
           ik,
           message: "Item Not Found",
         });
       } else {
         this.logger.error('General Error', { ik, message: err?.message, stack: err?.stack });
-        return res.status(500).json({
+        res.status(500).json({
           ik,
           message: "General Error",
         });
@@ -294,7 +296,7 @@ export class ItemRouter<
     const ik = this.getIk(res);
     const itemToUpdate = this.convertDates(req.body as ItemProperties<S, L1, L2, L3, L4, L5>);
     const retItem = validatePK(await this.lib.update(ik, itemToUpdate), this.getPkType());
-    return res.json(retItem);
+    res.json(retItem);
   };
 
   public convertDates = (item: Item<S, L1, L2, L3, L4, L5> | ItemProperties<S, L1, L2, L3, L4, L5>):

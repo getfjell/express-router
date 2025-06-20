@@ -60,7 +60,7 @@ class TestItemRouter extends ItemRouter<"test", "container"> {
   protected configureAllActions(): Record<string, AllActionMethods> {
     return {
       allAction: [
-        (req, res) => res.json({ action: "allAction" })
+        (req, res) => { res.json({ action: "allAction" }); }
       ]
     };
   }
@@ -73,13 +73,13 @@ class TestItemRouter extends ItemRouter<"test", "container"> {
     return locKeyArray;
   }
 
-  public createItem = async (req: Request, res: Response): Promise<Response<any, Record<string, any>>> => {
-    return res.json(testItem);
+  public createItem = async (req: Request, res: Response): Promise<void> => {
+    res.json(testItem);
   }
 
-  public findItems = async (req: Request, res: Response): Promise<Response<any, Record<string, any>>> => {
+  public findItems = async (req: Request, res: Response): Promise<void> => {
     const items = [testItem] as TestItem[];
-    return res.json(items);
+    res.json(items);
   }
 }
 
