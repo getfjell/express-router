@@ -76,6 +76,10 @@ export default defineVitestConfig({
         'node_modules/',
         'tests/',
         'src/index.ts',
+        'dist/**/*.ts',
+        'dist/**/*.js',
+        'vite.config.ts',
+        'eslint.config.mjs'
       ],
       thresholds: {
         global: {
