@@ -59,6 +59,7 @@ describe("CItemRouter", () => {
     vi.resetAllMocks();
     mockLib = {
       find: vi.fn(),
+      findOne: vi.fn(),
       all: vi.fn(),
       create: vi.fn(),
     };
@@ -238,6 +239,102 @@ describe("CItemRouter", () => {
       await router['findItems'](req as Request, res as Response);
 
       expect(mockLib.all).toHaveBeenCalledWith({ "limit": 10 }, [{ "kt": "container", "lk": "456" }]);
+      expect(res.json).toHaveBeenCalledWith(mockItems);
+    });
+
+    it('should find single item using findOne when one=true', async () => {
+      const mockParentLKA: LocKeyArray<'container'> = [{
+        kt: 'container',
+        lk: '456'
+      }];
+
+      mockParentRoute.getLKA.mockReturnValue(mockParentLKA);
+
+      const mockItem = {
+        id: '123',
+        key: {
+          kt: 'test',
+          pk: '123'
+        }
+      };
+
+      // @ts-ignore
+      mockLib.findOne.mockResolvedValue(mockItem);
+      req.query = {
+        finder: 'testFinder',
+        finderParams: JSON.stringify({ param: 'value' }),
+        one: 'true'
+      };
+
+      await router['findItems'](req as Request, res as Response);
+
+      expect(mockLib.findOne).toHaveBeenCalledWith(
+        'testFinder',
+        { param: 'value' },
+        [{ "kt": "container", "lk": "456" }]
+      );
+      expect(mockLib.find).not.toHaveBeenCalled();
+      expect(res.json).toHaveBeenCalledWith([mockItem]);
+    });
+
+    it('should return empty array when findOne returns null', async () => {
+      const mockParentLKA: LocKeyArray<'container'> = [{
+        kt: 'container',
+        lk: '456'
+      }];
+
+      mockParentRoute.getLKA.mockReturnValue(mockParentLKA);
+
+      // @ts-ignore
+      mockLib.findOne.mockResolvedValue(null);
+      req.query = {
+        finder: 'testFinder',
+        finderParams: JSON.stringify({ param: 'value' }),
+        one: 'true'
+      };
+
+      await router['findItems'](req as Request, res as Response);
+
+      expect(mockLib.findOne).toHaveBeenCalledWith(
+        'testFinder',
+        { param: 'value' },
+        [{ "kt": "container", "lk": "456" }]
+      );
+      expect(res.json).toHaveBeenCalledWith([]);
+    });
+
+    it('should use find when one parameter is not true', async () => {
+      const mockParentLKA: LocKeyArray<'container'> = [{
+        kt: 'container',
+        lk: '456'
+      }];
+
+      mockParentRoute.getLKA.mockReturnValue(mockParentLKA);
+
+      const mockItems = [{
+        id: '123',
+        key: {
+          kt: 'test',
+          pk: '123'
+        }
+      }];
+
+      // @ts-ignore
+      mockLib.find.mockResolvedValue(mockItems);
+      req.query = {
+        finder: 'testFinder',
+        finderParams: JSON.stringify({ param: 'value' }),
+        one: 'false'
+      };
+
+      await router['findItems'](req as Request, res as Response);
+
+      expect(mockLib.find).toHaveBeenCalledWith(
+        'testFinder',
+        { param: 'value' },
+        [{ "kt": "container", "lk": "456" }]
+      );
+      expect(mockLib.findOne).not.toHaveBeenCalled();
       expect(res.json).toHaveBeenCalledWith(mockItems);
     });
   });

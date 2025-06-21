@@ -38,11 +38,18 @@ export class PItemRouter<T extends Item<S>, S extends string> extends ItemRouter
     const query: ParsedQuery = req.query as unknown as ParsedQuery;
     const finder = query['finder'] as string;
     const finderParams = query['finderParams'] as string;
+    const one = query['one'] as string;
 
     if (finder) {
       // If finder is defined?  Call a finder.
-      logger.default('Finding Items with a finder', { finder, finderParams });
-      items = await this.lib.find(finder, JSON.parse(finderParams));
+      logger.default('Finding Items with a finder', { finder, finderParams, one });
+
+      if (one === 'true') {
+        const item = await (this.lib as any).findOne(finder, JSON.parse(finderParams));
+        items = item ? [item] : [];
+      } else {
+        items = await this.lib.find(finder, JSON.parse(finderParams));
+      }
     } else {
       logger.default('Finding Items with a query', { query: req.query });
       // TODO: This is once of the more important places to perform some validaation and feedback
