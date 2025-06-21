@@ -27,10 +27,9 @@ export class PItemRouter<T extends Item<S>, S extends string> extends ItemRouter
     let item =
       validatePK(await this.lib.create(itemToCreate), this.getPkType()) as Item<S>;
     item = await this.postCreateItem(item);
-    return res.json(item);
+    res.json(item);
   };
 
-  /* eslint-disable */
   protected findItems = async (req: Request, res: Response) => {
     logger.default('Finding Items', { query: req.query, params: req.params, locals: res.locals });
 
@@ -39,11 +38,18 @@ export class PItemRouter<T extends Item<S>, S extends string> extends ItemRouter
     const query: ParsedQuery = req.query as unknown as ParsedQuery;
     const finder = query['finder'] as string;
     const finderParams = query['finderParams'] as string;
+    const one = query['one'] as string;
 
-    if( finder ) { 
+    if (finder) {
       // If finder is defined?  Call a finder.
-      logger.default('Finding Items with a finder', { finder, finderParams });
-      items = await this.lib.find(finder, JSON.parse(finderParams));
+      logger.default('Finding Items with a finder', { finder, finderParams, one });
+
+      if (one === 'true') {
+        const item = await (this.lib as any).findOne(finder, JSON.parse(finderParams));
+        items = item ? [item] : [];
+      } else {
+        items = await this.lib.find(finder, JSON.parse(finderParams));
+      }
     } else {
       logger.default('Finding Items with a query', { query: req.query });
       // TODO: This is once of the more important places to perform some validaation and feedback
@@ -51,7 +57,7 @@ export class PItemRouter<T extends Item<S>, S extends string> extends ItemRouter
       items = await this.lib.all(itemQuery);
     }
 
-    return res.json(items.map((item: Item<S>) => validatePK(item, this.getPkType())));
+    res.json(items.map((item: Item<S>) => validatePK(item, this.getPkType())));
   };
-  /* eslint-enable */
+
 }

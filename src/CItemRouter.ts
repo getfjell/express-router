@@ -66,30 +66,37 @@ export class CItemRouter<
       validatePK(await this.lib.create(
         itemToCreate, { locations: this.getLocations(res) }), this.getPkType()) as Item<S, L1, L2, L3, L4, L5>;
     item = await this.postCreateItem(item);
-    return res.json(item);
+    res.json(item);
   };
 
-  /* eslint-disable */
   protected findItems = async (req: Request, res: Response) => {
     logger.trace('Finding Items', { query: req.query, params: req.params, locals: res.locals });
 
     const query: ParsedQuery = req.query as unknown as ParsedQuery;
     const finder = query['finder'] as string;
     const finderParams = query['finderParams'] as string;
+    const one = query['one'] as string;
 
     let items: Item<S, L1, L2, L3, L4, L5>[] = [];
 
-    if( finder ) { 
+    if (finder) {
       // If finder is defined?  Call a finder.
-      items = await this.lib.find(finder, JSON.parse(finderParams), this.getLocations(res));
+      logger.trace('Finding Items with a finder', { finder, finderParams, one });
+
+      if (one === 'true') {
+        const item = await (this.lib as any).findOne(finder, JSON.parse(finderParams), this.getLocations(res));
+        items = item ? [item] : [];
+      } else {
+        items = await this.lib.find(finder, JSON.parse(finderParams), this.getLocations(res));
+      }
     } else {
+      logger.trace('Finding Items with a query', { query: req.query });
       // TODO: This is once of the more important places to perform some validaation and feedback
       const itemQuery: ItemQuery = paramsToQuery(req.query as QueryParams);
       items = await this.lib.all(itemQuery, this.getLocations(res));
     }
 
-    return res.json(items.map((item: Item<S, L1, L2, L3, L4, L5>) => validatePK(item, this.getPkType())));
+    res.json(items.map((item: Item<S, L1, L2, L3, L4, L5>) => validatePK(item, this.getPkType())));
   };
-  /* eslint-enable */
 
 }
