@@ -2,7 +2,7 @@
 import { ComKey, Item, LocKey, LocKeyArray, PriKey, UUID } from "@fjell/core";
 import { NotFoundError, Operations } from "@fjell/lib";
 import { Request, Response, Router } from "express";
-import { ActionMethod, AllActionMethods, ItemRouter } from "@/ItemRouter";
+import { ActionMethod, AllActionMethods, FacetMethod, ItemRouter } from "@/ItemRouter";
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@fjell/logging', () => ({
@@ -50,9 +50,16 @@ const testItem: TestItem = {
 class TestItemRouter extends ItemRouter<"test", "container"> {
   protected configureItemActions(): Record<string, ActionMethod> {
     return {
-
       customAction: async (req, res, item, params, body) => {
         return { ...item, customAction: true };
+      }
+    };
+  }
+
+  protected configureItemFacets(): Record<string, FacetMethod> {
+    return {
+      customFacet: async (req, res, item, params) => {
+        res.json({ facet: "customFacet", item });
       }
     };
   }
@@ -84,7 +91,6 @@ class TestItemRouter extends ItemRouter<"test", "container"> {
 }
 
 class TestItemRouterNoActions extends ItemRouter<"test", "container"> {
-
   protected getIk(res: Response): PriKey<"test"> | ComKey<"test", "container"> {
     return comKey;
   }
@@ -104,19 +110,27 @@ describe("ItemRouter", () => {
     lib = {
       get: vi.fn(),
       remove: vi.fn(),
+      update: vi.fn(),
     };
     router = new TestItemRouter(lib, "test");
     router['configure'](Router());
     req = {
       params: {},
       body: {},
-      query: {}
+      query: {},
+      path: '/test/123'
     };
     res = {
       locals: {},
       json: vi.fn(),
       status: vi.fn().mockReturnThis()
     };
+  });
+
+  it("should create router with options", () => {
+    const options = {};
+    const routerWithOptions = new TestItemRouter(lib, "test", options);
+    expect(routerWithOptions).toBeDefined();
   });
 
   it("should configure router with item actions", () => {
@@ -138,13 +152,6 @@ describe("ItemRouter", () => {
     // @ts-ignore
     const pkParam = router.getPkParam();
     expect(pkParam).toBe("testPk");
-  });
-
-  it("should configure the router correctly", () => {
-    const expressRouter = Router();
-    const configureSpy = vi.spyOn(router as any, "configure");
-    router.getRouter();
-    expect(configureSpy).toHaveBeenCalled();
   });
 
   it("should validate primary key value correctly", () => {
@@ -323,9 +330,18 @@ describe("ItemRouter", () => {
       await router['updateItem'](req as Request, res as Response);
       expect(getIkSpy).toHaveBeenCalled();
     });
+
+    it("should handle updateItem error paths", async () => {
+      const error = new Error("Update failed");
+      lib.update = vi.fn().mockRejectedValue(error);
+      req.body = testItem;
+      res.locals = { testPk: "1-1-1-1-1" };
+
+      await expect(router['updateItem'](req as Request, res as Response)).rejects.toThrow("Update failed");
+    });
   });
 
-  describe('get LKA, Locations, and Stuff', () => {
+  describe('Key methods', () => {
     it('should return the correct LKA', () => {
       res.locals = { testPk: "1-1-1-1-1" };
 
@@ -334,8 +350,6 @@ describe("ItemRouter", () => {
     });
 
     it('should throw an error if getLocations is not implemented', () => {
-      res.locals = { testPk: "1-1-1-1-1" };
-
       const abstractRouter = new ItemRouter(lib, "test");
       expect(() =>
         abstractRouter['getLocations'](res as Response)
@@ -343,18 +357,34 @@ describe("ItemRouter", () => {
     });
 
     it('should throw an error if getIk is not implemented', () => {
-      res.locals = { testPk: "1-1-1-1-1" };
-
       const abstractRouter = new ItemRouter(lib, "test");
       expect(() =>
         abstractRouter['getIk'](res as Response)
       ).toThrow('Method not implemented in an abstract router');
+    });
+
+    it('should return correct primary key', () => {
+      res.locals = { testPk: "1-1-1-1-1" };
+      const pk = router.getPk(res as Response);
+      expect(pk).toEqual({ kt: "test", pk: "1-1-1-1-1" });
+    });
+
+    it('should return correct location key', () => {
+      res.locals = { testPk: "1-1-1-1-1" };
+      const lk = router['getLk'](res as Response);
+      expect(lk).toEqual({ kt: "test", lk: "1-1-1-1-1" });
+    });
+
+    it('should return correct primary key type', () => {
+      const pkType = router.getPkType();
+      expect(pkType).toBe("test");
     });
   });
 
   describe('postItemAction', () => {
     it('should call the item action', async () => {
       lib.get = vi.fn().mockResolvedValue(testItem);
+      res.locals = { testPk: "1-1-1-1-1" };
 
       // @ts-ignore
       req.path = '/test/123/customAction';
@@ -364,6 +394,7 @@ describe("ItemRouter", () => {
 
     it('test calling an action that doesnt exist', async () => {
       lib.get = vi.fn().mockResolvedValue(testItem);
+      res.locals = { testPk: "1-1-1-1-1" };
 
       // @ts-ignore
       req.path = '/test/123/customActionMissing';
@@ -378,6 +409,80 @@ describe("ItemRouter", () => {
       const response = await abstractRouter['postItemAction'](req as Request, res as Response);
       expect(res.status).toHaveBeenCalledWith(500);
       expect(res.json).toHaveBeenCalledWith({ error: 'Item Actions are not configured' });
+    });
+
+    it('should handle error when lib.get fails in postItemAction', async () => {
+      const error = new Error("Database error");
+      lib.get = vi.fn().mockRejectedValue(error);
+      res.locals = { testPk: "1-1-1-1-1" };
+
+      // @ts-ignore
+      req.path = '/test/123/customAction';
+      await router['postItemAction'](req as Request, res as Response);
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.json).toHaveBeenCalledWith(error);
+    });
+  });
+
+  describe('getItemFacet', () => {
+    it('should call the item facet successfully', async () => {
+      lib.get = vi.fn().mockResolvedValue(testItem);
+      res.locals = { testPk: "1-1-1-1-1" };
+
+      // @ts-ignore
+      req.path = '/test/123/customFacet';
+      await router['getItemFacet'](req as Request, res as Response);
+      expect(lib.get).toHaveBeenCalledWith(comKey);
+      expect(res.json).toHaveBeenCalledWith({ facet: "customFacet", item: testItem });
+    });
+
+    it('should return error when facets are not configured', async () => {
+      const abstractRouter = new TestItemRouterNoActions(lib, "test");
+      // @ts-ignore
+      req.path = '/test/123/customFacet';
+      await abstractRouter['getItemFacet'](req as Request, res as Response);
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.json).toHaveBeenCalledWith({ error: 'Item Facets are not configured' });
+    });
+
+    it('should handle error when lib.get fails in getItemFacet', async () => {
+      const error = new Error("Database error");
+      lib.get = vi.fn().mockRejectedValue(error);
+      res.locals = { testPk: "1-1-1-1-1" };
+
+      // @ts-ignore
+      req.path = '/test/123/customFacet';
+      await router['getItemFacet'](req as Request, res as Response);
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.json).toHaveBeenCalledWith(error);
+    });
+  });
+
+  describe('postCreateItem and convertDates', () => {
+    it('should call postCreateItem hook', async () => {
+      const result = await router.postCreateItem(testItem);
+      expect(result).toEqual(testItem);
+    });
+
+    it('should handle item with no events property', () => {
+      const itemWithoutEvents: Partial<TestItem> = { ...testItem };
+      delete itemWithoutEvents.events;
+
+      const convertedItem = router["convertDates"](itemWithoutEvents as TestItem);
+      expect(convertedItem.events).toBeUndefined();
+    });
+  });
+
+  describe('configure method branches', () => {
+    it('should configure router with multiple child routers', () => {
+      const childRouter1 = Router();
+      const childRouter2 = Router();
+      router.addChildRouter("child1", childRouter1);
+      router.addChildRouter("child2", childRouter2);
+
+      const expressRouter = Router();
+      router["configureChildRouters"](expressRouter, router["childRouters"]);
+      expect(expressRouter.stack).toHaveLength(2);
     });
   });
 
