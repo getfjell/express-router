@@ -13,7 +13,7 @@ interface ParsedQuery {
 export class PItemRouter<T extends Item<S>, S extends string> extends ItemRouter<S> {
 
   constructor(lib: Primary.Operations<T, S>, keyType: S, options: ItemRouterOptions = {}) {
-    super(lib, keyType, options);
+    super(lib as any, keyType, options);
   }
 
   public getIk(res: Response): PriKey<S> {
