@@ -11,35 +11,10 @@ import {
 } from "@fjell/core";
 import { NotFoundError, Operations } from "@fjell/lib";
 import deepmerge from "deepmerge";
-import { Request, RequestHandler, Response, Router } from "express";
+import { Request, Response, Router } from "express";
 import LibLogger from "./logger";
 
 export type ItemRouterOptions = Record<string, never>;
-
-// TODO: body is in the request, it's not needed in the parameters
-export type ActionMethod = <
-  S extends string,
-  L1 extends string = never,
-  L2 extends string = never,
-  L3 extends string = never,
-  L4 extends string = never,
-  L5 extends string = never
->(req: Request, res: Response, item: Item<S, L1, L2, L3, L4, L5>, params: any, body: any) =>
-  Promise<Item<S, L1, L2, L3, L4, L5>>;
-
-// TODO: body is in the request, it's not needed in the parameters
-export type AllActionMethods = Array<RequestHandler>;
-
-// TODO: body is in the request, it's not needed in the parameters
-export type FacetMethod = <
-  S extends string,
-  L1 extends string = never,
-  L2 extends string = never,
-  L3 extends string = never,
-  L4 extends string = never,
-  L5 extends string = never
->(req: Request, res: Response, item: Item<S, L1, L2, L3, L4, L5>, params: any) =>
-  Promise<any>;
 
 export class ItemRouter<
   S extends string,
@@ -55,8 +30,6 @@ export class ItemRouter<
   protected options: ItemRouterOptions;
   private childRouters: Record<string, Router> = {};
   private logger;
-  private itemActions: Record<string, ActionMethod> | undefined;
-  private itemFacets: Record<string, FacetMethod> | undefined;
 
   constructor(
     lib: Operations<Item<S, L1, L2, L3, L4, L5>, S, L1, L2, L3, L4, L5>,
@@ -106,15 +79,19 @@ export class ItemRouter<
     this.logger.default('Getting Item', { query: req?.query, params: req?.params, locals: res?.locals });
     const ik = this.getIk(res);
     const actionKey = req.path.substring(req.path.lastIndexOf('/') + 1);
-    if (!this.itemActions) {
+    if (!this.lib.actions) {
       this.logger.error('Item Actions are not configured');
       res.status(500).json({ error: 'Item Actions are not configured' });
       return;
     }
+    const action = this.lib.actions[actionKey];
+    if (!action) {
+      this.logger.error('Item Action is not configured', { actionKey });
+      res.status(500).json({ error: 'Item Action is not configured' });
+      return;
+    }
     try {
-      const item =
-        validatePK(await this.lib.get(ik), this.getPkType()) as Item<S, L1, L2, L3, L4, L5>;
-      res.json(await this.itemActions[actionKey](req, res, item, req.params, req.body));
+      res.json(await this.lib.action(ik, actionKey, req.body));
     } catch (err: any) {
       this.logger.error('Error in Item Action', { message: err?.message, stack: err?.stack });
       res.status(500).json(err);
@@ -125,15 +102,19 @@ export class ItemRouter<
     this.logger.default('Getting Item', { query: req?.query, params: req?.params, locals: res?.locals });
     const ik = this.getIk(res);
     const facetKey = req.path.substring(req.path.lastIndexOf('/') + 1);
-    if (!this.itemFacets) {
+    if (!this.lib.facets) {
       this.logger.error('Item Facets are not configured');
       res.status(500).json({ error: 'Item Facets are not configured' });
       return;
     }
+    const facet = this.lib.facets[facetKey];
+    if (!facet) {
+      this.logger.error('Item Facet is not configured', { facetKey });
+      res.status(500).json({ error: 'Item Facet is not configured' });
+      return;
+    }
     try {
-      const item =
-        validatePK(await this.lib.get(ik), this.getPkType()) as Item<S, L1, L2, L3, L4, L5>;
-      await this.itemFacets[facetKey](req, res, item, req.params);
+      res.json(await this.lib.facet(ik, facetKey, req.params));
     } catch (err: any) {
       this.logger.error('Error in Item Facet', { message: err?.message, stack: err?.stack });
       res.status(500).json(err);
@@ -145,35 +126,33 @@ export class ItemRouter<
     router.get('/', this.findItems);
     router.post('/', this.createItem);
 
-    const allActions = this.configureAllActions();
-    this.logger.debug('All Actions supplied to Router', { allActions });
-    if (allActions) {
-      Object.keys(allActions).forEach((actionKey) => {
-        this.logger.default('Configuring All Action', { actionKey });
-        // TODO: Ok, this is a bit of a hack, but we need to customize the types of the request handlers
-        router.post(`/${actionKey}`, ...allActions[actionKey]);
-      });
-    }
+    // const allActions = this.configureAllActions();
+    // this.logger.debug('All Actions supplied to Router', { allActions });
+    // if (allActions) {
+    //   Object.keys(allActions).forEach((actionKey) => {
+    //     this.logger.default('Configuring All Action', { actionKey });
+    //     // TODO: Ok, this is a bit of a hack, but we need to customize the types of the request handlers
+    //     router.post(`/${actionKey}`, ...allActions[actionKey]);
+    //   });
+    // }
 
     const itemRouter = Router();
     itemRouter.get('/', this.getItem);
     itemRouter.put('/', this.updateItem);
     itemRouter.delete('/', this.deleteItem);
 
-    this.itemActions = this.configureItemActions();
-    this.logger.debug('Item Actions supplied to Router', { itemActions: this.itemActions });
-    if (this.itemActions) {
-      Object.keys(this.itemActions).forEach((actionKey) => {
+    this.logger.debug('Item Actions supplied to Router', { itemActions: this.lib.actions });
+    if (this.lib.actions) {
+      Object.keys(this.lib.actions).forEach((actionKey) => {
         this.logger.default('Configuring Item Action', { actionKey });
         // TODO: Ok, this is a bit of a hack, but we need to customize the types of the request handlers
         itemRouter.post(`/${actionKey}`, this.postItemAction)
       });
     }
 
-    this.itemFacets = this.configureItemFacets();
-    this.logger.debug('Item Facets supplied to Router', { itemFacets: this.itemFacets });
-    if (this.itemFacets) {
-      Object.keys(this.itemFacets).forEach((facetKey) => {
+    this.logger.debug('Item Facets supplied to Router', { itemFacets: this.lib.facets });
+    if (this.lib.facets) {
+      Object.keys(this.lib.facets).forEach((facetKey) => {
         this.logger.default('Configuring Item Facet', { facetKey });
         // TODO: Ok, this is a bit of a hack, but we need to customize the types of the request handlers
         itemRouter.get(`/${facetKey}`, this.getItemFacet)
@@ -211,24 +190,6 @@ export class ItemRouter<
 
   public addChildRouter = (path: string, router: Router) => {
     this.childRouters[path] = router;
-  }
-
-  /* istanbul ignore next */
-  protected configureItemActions(): Record<string, ActionMethod> {
-    this.logger.debug('ARouter - No Item Actions Configured');
-    return {};
-  }
-
-  /* istanbul ignore next */
-  protected configureItemFacets(): Record<string, FacetMethod> {
-    this.logger.debug('ARouter - No Item Facets Configured');
-    return {};
-  }
-
-  /* istanbul ignore next */
-  protected configureAllActions(): Record<string, AllActionMethods> {
-    this.logger.debug('ARouter - No All Actions Configured');
-    return {};
   }
 
   /* istanbul ignore next */

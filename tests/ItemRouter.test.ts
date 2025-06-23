@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/no-unused-vars, no-undefined */
+import { ItemRouter } from "@/ItemRouter";
 import { ComKey, Item, LocKey, LocKeyArray, PriKey, UUID } from "@fjell/core";
-import { NotFoundError, Operations } from "@fjell/lib";
+import { NotFoundError } from "@fjell/lib";
 import { Request, Response, Router } from "express";
-import { ActionMethod, AllActionMethods, FacetMethod, ItemRouter } from "@/ItemRouter";
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@fjell/logging', () => ({
@@ -48,29 +48,6 @@ const testItem: TestItem = {
 }
 
 class TestItemRouter extends ItemRouter<"test", "container"> {
-  protected configureItemActions(): Record<string, ActionMethod> {
-    return {
-      customAction: async (req, res, item, params, body) => {
-        return { ...item, customAction: true };
-      }
-    };
-  }
-
-  protected configureItemFacets(): Record<string, FacetMethod> {
-    return {
-      customFacet: async (req, res, item, params) => {
-        res.json({ facet: "customFacet", item });
-      }
-    };
-  }
-
-  protected configureAllActions(): Record<string, AllActionMethods> {
-    return {
-      allAction: [
-        (req, res) => { res.json({ action: "allAction" }); }
-      ]
-    };
-  }
 
   protected getIk(res: Response): PriKey<"test"> | ComKey<"test", "container"> {
     return comKey;
@@ -111,6 +88,24 @@ describe("ItemRouter", () => {
       get: vi.fn(),
       remove: vi.fn(),
       update: vi.fn(),
+      actions: {
+        customAction: vi.fn().mockResolvedValue({ customAction: true }),
+      },
+      facets: {
+        customFacet: vi.fn().mockResolvedValue({ facet: "customFacet" }),
+      },
+      action: vi.fn().mockImplementation(async (ik, actionKey, body) => {
+        if (actionKey === 'customAction') {
+          return { customAction: true, ...testItem };
+        }
+        throw new Error('Action not found');
+      }),
+      facet: vi.fn().mockImplementation(async (ik, facetKey, params) => {
+        if (facetKey === 'customFacet') {
+          return { facet: "customFacet", item: testItem };
+        }
+        throw new Error('Facet not found');
+      }),
     };
     router = new TestItemRouter(lib, "test");
     router['configure'](Router());
@@ -177,14 +172,6 @@ describe("ItemRouter", () => {
     const expressRouter = Router();
     router["configureChildRouters"](expressRouter, router["childRouters"]);
     expect(expressRouter.stack).toHaveLength(1);
-  });
-
-  it("should handle all actions", async () => {
-    const nextFunction = vi.fn();
-    const allActions = router["configureAllActions"]();
-    const allAction = allActions["allAction"][0];
-    await allAction(req as Request, res as Response, nextFunction);
-    expect(res.json).toHaveBeenCalledWith({ action: "allAction" });
   });
 
   it("should return true for valid primary key parameter", () => {
@@ -383,7 +370,6 @@ describe("ItemRouter", () => {
 
   describe('postItemAction', () => {
     it('should call the item action', async () => {
-      lib.get = vi.fn().mockResolvedValue(testItem);
       res.locals = { testPk: "1-1-1-1-1" };
 
       // @ts-ignore
@@ -393,7 +379,6 @@ describe("ItemRouter", () => {
     });
 
     it('test calling an action that doesnt exist', async () => {
-      lib.get = vi.fn().mockResolvedValue(testItem);
       res.locals = { testPk: "1-1-1-1-1" };
 
       // @ts-ignore
@@ -403,7 +388,12 @@ describe("ItemRouter", () => {
     });
 
     it('test calling an action on an abstract router with no item actions', async () => {
-      const abstractRouter = new TestItemRouterNoActions(lib, "test");
+      const libWithoutActions = {
+        get: vi.fn(),
+        remove: vi.fn(),
+        update: vi.fn(),
+      };
+      const abstractRouter = new TestItemRouterNoActions(libWithoutActions as any, "test");
       // @ts-ignore
       req.path = '/test/123/customAction';
       const response = await abstractRouter['postItemAction'](req as Request, res as Response);
@@ -411,9 +401,9 @@ describe("ItemRouter", () => {
       expect(res.json).toHaveBeenCalledWith({ error: 'Item Actions are not configured' });
     });
 
-    it('should handle error when lib.get fails in postItemAction', async () => {
+    it('should handle error when lib.action fails in postItemAction', async () => {
       const error = new Error("Database error");
-      lib.get = vi.fn().mockRejectedValue(error);
+      lib.action = vi.fn().mockRejectedValue(error);
       res.locals = { testPk: "1-1-1-1-1" };
 
       // @ts-ignore
@@ -426,18 +416,22 @@ describe("ItemRouter", () => {
 
   describe('getItemFacet', () => {
     it('should call the item facet successfully', async () => {
-      lib.get = vi.fn().mockResolvedValue(testItem);
       res.locals = { testPk: "1-1-1-1-1" };
 
       // @ts-ignore
       req.path = '/test/123/customFacet';
       await router['getItemFacet'](req as Request, res as Response);
-      expect(lib.get).toHaveBeenCalledWith(comKey);
+      expect(lib.facet).toHaveBeenCalledWith(comKey, 'customFacet', req.params);
       expect(res.json).toHaveBeenCalledWith({ facet: "customFacet", item: testItem });
     });
 
     it('should return error when facets are not configured', async () => {
-      const abstractRouter = new TestItemRouterNoActions(lib, "test");
+      const libWithoutFacets = {
+        get: vi.fn(),
+        remove: vi.fn(),
+        update: vi.fn(),
+      };
+      const abstractRouter = new TestItemRouterNoActions(libWithoutFacets as any, "test");
       // @ts-ignore
       req.path = '/test/123/customFacet';
       await abstractRouter['getItemFacet'](req as Request, res as Response);
@@ -445,9 +439,9 @@ describe("ItemRouter", () => {
       expect(res.json).toHaveBeenCalledWith({ error: 'Item Facets are not configured' });
     });
 
-    it('should handle error when lib.get fails in getItemFacet', async () => {
+    it('should handle error when lib.facet fails in getItemFacet', async () => {
       const error = new Error("Database error");
-      lib.get = vi.fn().mockRejectedValue(error);
+      lib.facet = vi.fn().mockRejectedValue(error);
       res.locals = { testPk: "1-1-1-1-1" };
 
       // @ts-ignore

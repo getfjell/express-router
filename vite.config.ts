@@ -43,6 +43,13 @@ export default defineVitestConfig({
     },
     rollupOptions: {
       input: 'src/index.ts',
+      external: [
+        '@fjell/core',
+        '@fjell/lib',
+        '@fjell/logging',
+        'deepmerge',
+        'express'
+      ],
       output: [
         {
           format: 'esm',
@@ -79,14 +86,14 @@ export default defineVitestConfig({
         'dist/**/*.ts',
         'dist/**/*.js',
         'vite.config.ts',
-        'eslint.config.mjs'
+        'eslint.config.mjs',
       ],
       thresholds: {
         global: {
           branches: 75,
-          functions: 89,
-          lines: 89,
-          statements: 89,
+          functions: 100,
+          lines: 97,
+          statements: 97,
         },
       },
     },
