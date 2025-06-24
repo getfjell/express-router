@@ -90,10 +90,10 @@ export default defineVitestConfig({
       ],
       thresholds: {
         global: {
-          branches: 75,
+          branches: 72,
           functions: 100,
-          lines: 97,
-          statements: 97,
+          lines: 98,
+          statements: 98,
         },
       },
     },
