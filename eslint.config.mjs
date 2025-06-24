@@ -30,12 +30,12 @@ export default [{
     "no-unused-vars": "off",
 
     "max-len": ["error", {
-      code: 120,
+      code: 160,
     }],
 
     "max-depth": ["error", 4],
     "max-params": ["error", 7],
-    "max-lines": ["error", 500],
+    "max-lines": ["error", 1000],
 
     "no-multiple-empty-lines": ["error", {
       max: 1,

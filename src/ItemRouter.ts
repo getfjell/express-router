@@ -75,6 +75,51 @@ export class ItemRouter<
     throw new Error('Method not implemented in an abstract router');
   }
 
+  protected postAllAction = async (req: Request, res: Response) => {
+    this.logger.default('Posting All Action', { query: req?.query, params: req?.params, locals: res?.locals });
+    const allActionKey = req.path.substring(req.path.lastIndexOf('/') + 1);
+    if (!this.lib.allActions) {
+      this.logger.error('Item Actions are not configured');
+      res.status(500).json({ error: 'Item Actions are not configured' });
+      return;
+    }
+    const allAction = this.lib.allActions[allActionKey];
+    if (!allAction) {
+      this.logger.error('All Action is not configured', { allActionKey });
+      res.status(500).json({ error: 'Item Action is not configured' });
+      return;
+    }
+    try {
+      res.json(await this.lib.allAction(allActionKey, req.body));
+    } catch (err: any) {
+      this.logger.error('Error in All Action', { message: err?.message, stack: err?.stack });
+      res.status(500).json(err);
+    }
+  }
+
+  protected getAllFacet = async (req: Request, res: Response) => {
+    this.logger.default('Getting All Facet', { query: req?.query, params: req?.params, locals: res?.locals });
+    const facetKey = req.path.substring(req.path.lastIndexOf('/') + 1);
+    if (!this.lib.allFacets) {
+      this.logger.error('Item Facets are not configured');
+      res.status(500).json({ error: 'Item Facets are not configured' });
+      return;
+    }
+    const facet = this.lib.allFacets[facetKey];
+    if (!facet) {
+      this.logger.error('Item Facet is not configured', { facetKey });
+      res.status(500).json({ error: 'Item Facet is not configured' });
+      return;
+    }
+    try {
+      const combinedQueryParams = { ...req.query, ...req.params } as Record<string, string | number | boolean | Date | Array<string | number | boolean | Date>>;
+      res.json(await this.lib.allFacet(facetKey, combinedQueryParams));
+    } catch (err: any) {
+      this.logger.error('Error in All Facet', { message: err?.message, stack: err?.stack });
+      res.status(500).json(err);
+    }
+  }
+
   protected postItemAction = async (req: Request, res: Response) => {
     this.logger.default('Getting Item', { query: req?.query, params: req?.params, locals: res?.locals });
     const ik = this.getIk(res);
@@ -114,7 +159,8 @@ export class ItemRouter<
       return;
     }
     try {
-      res.json(await this.lib.facet(ik, facetKey, req.params));
+      const combinedQueryParams = { ...req.query, ...req.params } as Record<string, string | number | boolean | Date | Array<string | number | boolean | Date>>;
+      res.json(await this.lib.facet(ik, facetKey, combinedQueryParams));
     } catch (err: any) {
       this.logger.error('Error in Item Facet', { message: err?.message, stack: err?.stack });
       res.status(500).json(err);
@@ -126,15 +172,23 @@ export class ItemRouter<
     router.get('/', this.findItems);
     router.post('/', this.createItem);
 
-    // const allActions = this.configureAllActions();
-    // this.logger.debug('All Actions supplied to Router', { allActions });
-    // if (allActions) {
-    //   Object.keys(allActions).forEach((actionKey) => {
-    //     this.logger.default('Configuring All Action', { actionKey });
-    //     // TODO: Ok, this is a bit of a hack, but we need to customize the types of the request handlers
-    //     router.post(`/${actionKey}`, ...allActions[actionKey]);
-    //   });
-    // }
+    this.logger.debug('All Actions supplied to Router', { allActions: this.lib.allActions });
+    if (this.lib.allActions) {
+      Object.keys(this.lib.allActions).forEach((actionKey) => {
+        this.logger.default('Configuring All Action', { actionKey });
+        // TODO: Ok, this is a bit of a hack, but we need to customize the types of the request handlers
+        router.post(`/${actionKey}`, this.postAllAction);
+      });
+    }
+
+    this.logger.debug('All Facets supplied to Router', { allFacets: this.lib.allFacets });
+    if (this.lib.allFacets) {
+      Object.keys(this.lib.allFacets).forEach((facetKey) => {
+        this.logger.default('Configuring All Facet', { facetKey });
+        // TODO: Ok, this is a bit of a hack, but we need to customize the types of the request handlers
+        router.get(`/${facetKey}`, this.getAllFacet);
+      });
+    }
 
     const itemRouter = Router();
     itemRouter.get('/', this.getItem);

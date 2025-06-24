@@ -94,6 +94,12 @@ describe("ItemRouter", () => {
       facets: {
         customFacet: vi.fn().mockResolvedValue({ facet: "customFacet" }),
       },
+      allActions: {
+        customAllAction: vi.fn().mockResolvedValue({ allAction: true }),
+      },
+      allFacets: {
+        customAllFacet: vi.fn().mockResolvedValue({ facet: "customAllFacet" }),
+      },
       action: vi.fn().mockImplementation(async (ik, actionKey, body) => {
         if (actionKey === 'customAction') {
           return { customAction: true, ...testItem };
@@ -105,6 +111,18 @@ describe("ItemRouter", () => {
           return { facet: "customFacet", item: testItem };
         }
         throw new Error('Facet not found');
+      }),
+      allAction: vi.fn().mockImplementation(async (allActionKey, allActionParams) => {
+        if (allActionKey === 'customAllAction') {
+          return { allAction: true, ...testItem };
+        }
+        throw new Error('All Action not found');
+      }),
+      allFacet: vi.fn().mockImplementation(async (allFacetKey, allFacetParams) => {
+        if (allFacetKey === 'customAllFacet') {
+          return { facet: "customAllFacet", data: testItem };
+        }
+        throw new Error('All Facet not found');
       }),
     };
     router = new TestItemRouter(lib, "test");
@@ -477,6 +495,199 @@ describe("ItemRouter", () => {
       const expressRouter = Router();
       router["configureChildRouters"](expressRouter, router["childRouters"]);
       expect(expressRouter.stack).toHaveLength(2);
+    });
+  });
+
+  describe('postAllAction', () => {
+    it('should call the all action successfully', async () => {
+      lib.allActions = {
+        customAllAction: vi.fn().mockResolvedValue({ allAction: true }),
+      };
+      lib.allAction = vi.fn().mockResolvedValue({ allAction: true, result: 'success' });
+
+      // @ts-ignore
+      req.path = '/test/customAllAction';
+      req.body = { param1: 'value1', param2: 'value2' };
+
+      await router['postAllAction'](req as Request, res as Response);
+
+      expect(lib.allAction).toHaveBeenCalledWith('customAllAction', req.body);
+      expect(res.json).toHaveBeenCalledWith({ allAction: true, result: 'success' });
+    });
+
+    it('should return error when allActions are not configured', async () => {
+      lib.allActions = undefined;
+
+      // @ts-ignore
+      req.path = '/test/customAllAction';
+      await router['postAllAction'](req as Request, res as Response);
+
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.json).toHaveBeenCalledWith({ error: 'Item Actions are not configured' });
+    });
+
+    it('should return error when specific allAction does not exist', async () => {
+      lib.allActions = {
+        existingAction: vi.fn(),
+      };
+
+      // @ts-ignore
+      req.path = '/test/nonExistentAction';
+      await router['postAllAction'](req as Request, res as Response);
+
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.json).toHaveBeenCalledWith({ error: 'Item Action is not configured' });
+    });
+
+    it('should handle error when lib.allAction fails', async () => {
+      const error = new Error("All action failed");
+      lib.allActions = {
+        customAllAction: vi.fn(),
+      };
+      lib.allAction = vi.fn().mockRejectedValue(error);
+
+      // @ts-ignore
+      req.path = '/test/customAllAction';
+      req.body = { param1: 'value1' };
+
+      await router['postAllAction'](req as Request, res as Response);
+
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.json).toHaveBeenCalledWith(error);
+    });
+
+    it('should extract action key correctly from different path formats', async () => {
+      lib.allActions = {
+        testAction: vi.fn(),
+      };
+      lib.allAction = vi.fn().mockResolvedValue({ success: true });
+
+      // @ts-ignore
+      req.path = '/some/nested/path/testAction';
+      req.body = { data: 'test' };
+
+      await router['postAllAction'](req as Request, res as Response);
+
+      expect(lib.allAction).toHaveBeenCalledWith('testAction', req.body);
+      expect(res.json).toHaveBeenCalledWith({ success: true });
+    });
+  });
+
+  describe('getAllFacet', () => {
+    it('should call the all facet successfully', async () => {
+      lib.allFacets = {
+        customAllFacet: vi.fn().mockResolvedValue({ facet: 'customAllFacet' }),
+      };
+      lib.allFacet = vi.fn().mockResolvedValue({ facet: 'customAllFacet', data: 'test' });
+
+      // @ts-ignore
+      req.path = '/test/customAllFacet';
+      req.query = { param1: 'value1' };
+      req.params = { param2: 'value2' };
+
+      await router['getAllFacet'](req as Request, res as Response);
+
+      const expectedParams = { param1: 'value1', param2: 'value2' };
+      expect(lib.allFacet).toHaveBeenCalledWith('customAllFacet', expectedParams);
+      expect(res.json).toHaveBeenCalledWith({ facet: 'customAllFacet', data: 'test' });
+    });
+
+    it('should return error when allFacets are not configured', async () => {
+      lib.allFacets = undefined;
+
+      // @ts-ignore
+      req.path = '/test/customAllFacet';
+      await router['getAllFacet'](req as Request, res as Response);
+
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.json).toHaveBeenCalledWith({ error: 'Item Facets are not configured' });
+    });
+
+    it('should return error when specific allFacet does not exist', async () => {
+      lib.allFacets = {
+        existingFacet: vi.fn(),
+      };
+
+      // @ts-ignore
+      req.path = '/test/nonExistentFacet';
+      await router['getAllFacet'](req as Request, res as Response);
+
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.json).toHaveBeenCalledWith({ error: 'Item Facet is not configured' });
+    });
+
+    it('should handle error when lib.allFacet fails', async () => {
+      const error = new Error("All facet failed");
+      lib.allFacets = {
+        customAllFacet: vi.fn(),
+      };
+      lib.allFacet = vi.fn().mockRejectedValue(error);
+
+      // @ts-ignore
+      req.path = '/test/customAllFacet';
+      req.query = { param1: 'value1' };
+
+      await router['getAllFacet'](req as Request, res as Response);
+
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.json).toHaveBeenCalledWith(error);
+    });
+
+    it('should extract facet key correctly from different path formats', async () => {
+      lib.allFacets = {
+        testFacet: vi.fn(),
+      };
+      lib.allFacet = vi.fn().mockResolvedValue({ success: true });
+
+      // @ts-ignore
+      req.path = '/some/nested/path/testFacet';
+      req.query = { filter: 'active' };
+      req.params = { id: '123' };
+
+      await router['getAllFacet'](req as Request, res as Response);
+
+      const expectedParams = { filter: 'active', id: '123' };
+      expect(lib.allFacet).toHaveBeenCalledWith('testFacet', expectedParams);
+      expect(res.json).toHaveBeenCalledWith({ success: true });
+    });
+
+    it('should handle empty query and params correctly', async () => {
+      lib.allFacets = {
+        testFacet: vi.fn(),
+      };
+      lib.allFacet = vi.fn().mockResolvedValue({ success: true });
+
+      // @ts-ignore
+      req.path = '/test/testFacet';
+      req.query = {};
+      req.params = {};
+
+      await router['getAllFacet'](req as Request, res as Response);
+
+      expect(lib.allFacet).toHaveBeenCalledWith('testFacet', {});
+      expect(res.json).toHaveBeenCalledWith({ success: true });
+    });
+
+    it('should combine query and params with params overriding query', async () => {
+      lib.allFacets = {
+        testFacet: vi.fn(),
+      };
+      lib.allFacet = vi.fn().mockResolvedValue({ success: true });
+
+      // @ts-ignore
+      req.path = '/test/testFacet';
+      req.query = { param1: 'query_value', param2: 'query_only' };
+      req.params = { param1: 'param_value', param3: 'param_only' };
+
+      await router['getAllFacet'](req as Request, res as Response);
+
+      const expectedParams = {
+        param1: 'param_value', // params override query
+        param2: 'query_only',  // query value when not in params
+        param3: 'param_only'   // params only value
+      };
+      expect(lib.allFacet).toHaveBeenCalledWith('testFacet', expectedParams);
+      expect(res.json).toHaveBeenCalledWith({ success: true });
     });
   });
 
