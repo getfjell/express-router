@@ -9,7 +9,7 @@ import {
   PriKey,
   validatePK
 } from "@fjell/core";
-import { NotFoundError, Operations } from "@fjell/lib";
+import { Instance, NotFoundError } from "@fjell/lib";
 import deepmerge from "deepmerge";
 import { Request, Response, Router } from "express";
 import LibLogger from "./logger";
@@ -25,14 +25,14 @@ export class ItemRouter<
   L5 extends string = never
 > {
 
-  protected lib: Operations<Item<S, L1, L2, L3, L4, L5>, S, L1, L2, L3, L4, L5>;
+  protected lib: Instance<Item<S, L1, L2, L3, L4, L5>, S, L1, L2, L3, L4, L5>;
   private keyType: S;
   protected options: ItemRouterOptions;
   private childRouters: Record<string, Router> = {};
-  private logger;
+  protected logger;
 
   constructor(
-    lib: Operations<Item<S, L1, L2, L3, L4, L5>, S, L1, L2, L3, L4, L5>,
+    lib: Instance<Item<S, L1, L2, L3, L4, L5>, S, L1, L2, L3, L4, L5>,
     keyType: S,
     options: ItemRouterOptions = {}
   ) {
@@ -76,21 +76,23 @@ export class ItemRouter<
   }
 
   protected postAllAction = async (req: Request, res: Response) => {
-    this.logger.default('Posting All Action', { query: req?.query, params: req?.params, locals: res?.locals });
+    const libOptions = this.lib.definition.options;
+    const libOperations = this.lib.operations;
+    this.logger.debug('Posting All Action', { query: req?.query, params: req?.params, locals: res?.locals });
     const allActionKey = req.path.substring(req.path.lastIndexOf('/') + 1);
-    if (!this.lib.allActions) {
+    if (!libOptions.allActions) {
       this.logger.error('Item Actions are not configured');
       res.status(500).json({ error: 'Item Actions are not configured' });
       return;
     }
-    const allAction = this.lib.allActions[allActionKey];
+    const allAction = libOptions.allActions[allActionKey];
     if (!allAction) {
       this.logger.error('All Action is not configured', { allActionKey });
       res.status(500).json({ error: 'Item Action is not configured' });
       return;
     }
     try {
-      res.json(await this.lib.allAction(allActionKey, req.body));
+      res.json(await libOperations.allAction(allActionKey, req.body));
     } catch (err: any) {
       this.logger.error('Error in All Action', { message: err?.message, stack: err?.stack });
       res.status(500).json(err);
@@ -98,14 +100,16 @@ export class ItemRouter<
   }
 
   protected getAllFacet = async (req: Request, res: Response) => {
-    this.logger.default('Getting All Facet', { query: req?.query, params: req?.params, locals: res?.locals });
+    const libOptions = this.lib.definition.options;
+    const libOperations = this.lib.operations;
+    this.logger.debug('Getting All Facet', { query: req?.query, params: req?.params, locals: res?.locals });
     const facetKey = req.path.substring(req.path.lastIndexOf('/') + 1);
-    if (!this.lib.allFacets) {
+    if (!libOptions.allFacets) {
       this.logger.error('Item Facets are not configured');
       res.status(500).json({ error: 'Item Facets are not configured' });
       return;
     }
-    const facet = this.lib.allFacets[facetKey];
+    const facet = libOptions.allFacets[facetKey];
     if (!facet) {
       this.logger.error('Item Facet is not configured', { facetKey });
       res.status(500).json({ error: 'Item Facet is not configured' });
@@ -113,7 +117,7 @@ export class ItemRouter<
     }
     try {
       const combinedQueryParams = { ...req.query, ...req.params } as Record<string, string | number | boolean | Date | Array<string | number | boolean | Date>>;
-      res.json(await this.lib.allFacet(facetKey, combinedQueryParams));
+      res.json(await libOperations.allFacet(facetKey, combinedQueryParams));
     } catch (err: any) {
       this.logger.error('Error in All Facet', { message: err?.message, stack: err?.stack });
       res.status(500).json(err);
@@ -121,22 +125,24 @@ export class ItemRouter<
   }
 
   protected postItemAction = async (req: Request, res: Response) => {
-    this.logger.default('Getting Item', { query: req?.query, params: req?.params, locals: res?.locals });
+    const libOptions = this.lib.definition.options;
+    const libOperations = this.lib.operations;
+    this.logger.debug('Getting Item', { query: req?.query, params: req?.params, locals: res?.locals });
     const ik = this.getIk(res);
     const actionKey = req.path.substring(req.path.lastIndexOf('/') + 1);
-    if (!this.lib.actions) {
+    if (!libOptions.actions) {
       this.logger.error('Item Actions are not configured');
       res.status(500).json({ error: 'Item Actions are not configured' });
       return;
     }
-    const action = this.lib.actions[actionKey];
+    const action = libOptions.actions[actionKey];
     if (!action) {
       this.logger.error('Item Action is not configured', { actionKey });
       res.status(500).json({ error: 'Item Action is not configured' });
       return;
     }
     try {
-      res.json(await this.lib.action(ik, actionKey, req.body));
+      res.json(await libOperations.action(ik, actionKey, req.body));
     } catch (err: any) {
       this.logger.error('Error in Item Action', { message: err?.message, stack: err?.stack });
       res.status(500).json(err);
@@ -144,15 +150,17 @@ export class ItemRouter<
   }
 
   protected getItemFacet = async (req: Request, res: Response) => {
-    this.logger.default('Getting Item', { query: req?.query, params: req?.params, locals: res?.locals });
+    const libOptions = this.lib.definition.options;
+    const libOperations = this.lib.operations;
+    this.logger.debug('Getting Item', { query: req?.query, params: req?.params, locals: res?.locals });
     const ik = this.getIk(res);
     const facetKey = req.path.substring(req.path.lastIndexOf('/') + 1);
-    if (!this.lib.facets) {
+    if (!libOptions.facets) {
       this.logger.error('Item Facets are not configured');
       res.status(500).json({ error: 'Item Facets are not configured' });
       return;
     }
-    const facet = this.lib.facets[facetKey];
+    const facet = libOptions.facets[facetKey];
     if (!facet) {
       this.logger.error('Item Facet is not configured', { facetKey });
       res.status(500).json({ error: 'Item Facet is not configured' });
@@ -160,7 +168,7 @@ export class ItemRouter<
     }
     try {
       const combinedQueryParams = { ...req.query, ...req.params } as Record<string, string | number | boolean | Date | Array<string | number | boolean | Date>>;
-      res.json(await this.lib.facet(ik, facetKey, combinedQueryParams));
+      res.json(await libOperations.facet(ik, facetKey, combinedQueryParams));
     } catch (err: any) {
       this.logger.error('Error in Item Facet', { message: err?.message, stack: err?.stack });
       res.status(500).json(err);
@@ -168,23 +176,24 @@ export class ItemRouter<
   }
 
   private configure = (router: Router) => {
-    this.logger.default('Configuring Router', { pkType: this.getPkType() });
+    const libOptions = this.lib.definition.options;
+    this.logger.debug('Configuring Router', { pkType: this.getPkType() });
     router.get('/', this.findItems);
     router.post('/', this.createItem);
 
-    this.logger.debug('All Actions supplied to Router', { allActions: this.lib.allActions });
-    if (this.lib.allActions) {
-      Object.keys(this.lib.allActions).forEach((actionKey) => {
-        this.logger.default('Configuring All Action', { actionKey });
+    this.logger.default('All Actions supplied to Router', { allActions: libOptions.allActions });
+    if (libOptions.allActions) {
+      Object.keys(libOptions.allActions).forEach((actionKey) => {
+        this.logger.debug('Configuring All Action %s', actionKey);
         // TODO: Ok, this is a bit of a hack, but we need to customize the types of the request handlers
         router.post(`/${actionKey}`, this.postAllAction);
       });
     }
 
-    this.logger.debug('All Facets supplied to Router', { allFacets: this.lib.allFacets });
-    if (this.lib.allFacets) {
-      Object.keys(this.lib.allFacets).forEach((facetKey) => {
-        this.logger.default('Configuring All Facet', { facetKey });
+    this.logger.default('All Facets supplied to Router', { allFacets: libOptions.allFacets });
+    if (libOptions.allFacets) {
+      Object.keys(libOptions.allFacets).forEach((facetKey) => {
+        this.logger.debug('Configuring All Facet %s', facetKey);
         // TODO: Ok, this is a bit of a hack, but we need to customize the types of the request handlers
         router.get(`/${facetKey}`, this.getAllFacet);
       });
@@ -195,25 +204,25 @@ export class ItemRouter<
     itemRouter.put('/', this.updateItem);
     itemRouter.delete('/', this.deleteItem);
 
-    this.logger.debug('Item Actions supplied to Router', { itemActions: this.lib.actions });
-    if (this.lib.actions) {
-      Object.keys(this.lib.actions).forEach((actionKey) => {
-        this.logger.default('Configuring Item Action', { actionKey });
+    this.logger.default('Item Actions supplied to Router', { itemActions: libOptions.actions });
+    if (libOptions.actions) {
+      Object.keys(libOptions.actions).forEach((actionKey) => {
+        this.logger.debug('Configuring Item Action %s', actionKey);
         // TODO: Ok, this is a bit of a hack, but we need to customize the types of the request handlers
         itemRouter.post(`/${actionKey}`, this.postItemAction)
       });
     }
 
-    this.logger.debug('Item Facets supplied to Router', { itemFacets: this.lib.facets });
-    if (this.lib.facets) {
-      Object.keys(this.lib.facets).forEach((facetKey) => {
-        this.logger.default('Configuring Item Facet', { facetKey });
+    this.logger.default('Item Facets supplied to Router', { itemFacets: libOptions.facets });
+    if (libOptions.facets) {
+      Object.keys(libOptions.facets).forEach((facetKey) => {
+        this.logger.debug('Configuring Item Facet %s', facetKey);
         // TODO: Ok, this is a bit of a hack, but we need to customize the types of the request handlers
         itemRouter.get(`/${facetKey}`, this.getItemFacet)
       });
     }
 
-    this.logger.default('Configuring Item Operations under PK Param', { pkParam: this.getPkParam() });
+    this.logger.debug('Configuring Item Operations under PK Param %s', this.getPkParam());
     router.use(`/:${this.getPkParam()}`, this.validatePrimaryKeyValue, itemRouter);
 
     if (this.childRouters) {
@@ -228,14 +237,14 @@ export class ItemRouter<
       res.locals[this.getPkParam()] = pkParamValue;
       next();
     } else {
-      this.logger.error('Invalid Primary Key', { pkParamValue, path: req?.path });
-      res.status(500).json({ error: 'Invalid Primary Key', path: req?.path });
+      this.logger.error('Invalid Primary Key', { pkParamValue, path: req?.originalUrl });
+      res.status(500).json({ error: 'Invalid Primary Key', path: req?.originalUrl });
     }
   }
 
   private configureChildRouters = (router: Router, childRouters: Record<string, Router>) => {
     for (const path in childRouters) {
-      this.logger.default('Configuring Child Router at Path', { path });
+      this.logger.debug('Configuring Child Router at Path %s', path);
 
       router.use(`/${path}`, childRouters[path]);
     }
@@ -262,14 +271,16 @@ export class ItemRouter<
   // TODO: Probably a better way to do this, but this postCreate hook only needs the item.
   /* istanbul ignore next */
   public postCreateItem = async (item: Item<S, L1, L2, L3, L4, L5>): Promise<Item<S, L1, L2, L3, L4, L5>> => {
-    this.logger.default('Post Create Item', { item });
+    this.logger.debug('Post Create Item', { item });
     return item;
   };
 
   protected deleteItem = async (req: Request, res: Response): Promise<void> => {
-    this.logger.default('Deleting Item', { query: req.query, params: req.params, locals: res.locals });
+    const libOperations = this.lib.operations;
+
+    this.logger.debug('Deleting Item', { query: req.query, params: req.params, locals: res.locals });
     const ik = this.getIk(res);
-    const removedItem = await this.lib.remove(ik);
+    const removedItem = await libOperations.remove(ik);
     const item = validatePK(removedItem, this.getPkType());
     res.json(item);
   };
@@ -282,11 +293,12 @@ export class ItemRouter<
   /* eslint-enable */
 
   protected getItem = async (req: Request, res: Response) => {
-    this.logger.default('Getting Item', { query: req.query, params: req.params, locals: res.locals });
+    const libOperations = this.lib.operations;
+    this.logger.debug('Getting Item', { query: req.query, params: req.params, locals: res.locals });
     const ik = this.getIk(res);
     try {
       // TODO: What error does validate PK throw, when can that fail?
-      const item = validatePK(await this.lib.get(ik), this.getPkType());
+      const item = validatePK(await libOperations.get(ik), this.getPkType());
       res.json(item);
     } catch (err: any) {
       if (err instanceof NotFoundError) {
@@ -306,18 +318,19 @@ export class ItemRouter<
   }
 
   protected updateItem = async (req: Request, res: Response) => {
-    this.logger.default('Updating Item',
+    const libOperations = this.lib.operations;
+    this.logger.debug('Updating Item',
       { body: req?.body, query: req?.query, params: req?.params, locals: res?.locals });
     const ik = this.getIk(res);
     const itemToUpdate = this.convertDates(req.body as ItemProperties<S, L1, L2, L3, L4, L5>);
-    const retItem = validatePK(await this.lib.update(ik, itemToUpdate), this.getPkType());
+    const retItem = validatePK(await libOperations.update(ik, itemToUpdate), this.getPkType());
     res.json(retItem);
   };
 
   public convertDates = (item: Item<S, L1, L2, L3, L4, L5> | ItemProperties<S, L1, L2, L3, L4, L5>):
     Item<S, L1, L2, L3, L4, L5> | ItemProperties<S, L1, L2, L3, L4, L5> => {
     const events = item.events as Record<string, ItemEvent>;
-    this.logger.default('Converting Dates', { item });
+    this.logger.debug('Converting Dates', { item });
     if (events) {
       Object.keys(events).forEach((key: string) => {
         Object.assign(events, {
