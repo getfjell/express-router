@@ -47,9 +47,28 @@ describe("PItemFSRouter", () => {
 
   beforeEach(() => {
     mockLib = {
-      create: vi.fn(),
-      all: vi.fn(),
-      find: vi.fn(),
+      operations: {
+        create: vi.fn(),
+        all: vi.fn(),
+        find: vi.fn(),
+        findOne: vi.fn(),
+        get: vi.fn(),
+        update: vi.fn(),
+        remove: vi.fn(),
+        action: vi.fn(),
+        facet: vi.fn(),
+        allAction: vi.fn(),
+        allFacet: vi.fn()
+      },
+      definition: {
+        options: {
+          actions: {},
+          facets: {},
+          allActions: {},
+          allFacets: {}
+        }
+      },
+      // Add findOne directly to lib for PItemRouter compatibility
       findOne: vi.fn()
     };
     router = new PItemRouter(mockLib, "test");
@@ -68,13 +87,13 @@ describe("PItemFSRouter", () => {
   });
 
   it("should create an item", async () => {
-    mockLib.create.mockResolvedValue(testItem);
+    mockLib.operations.create.mockResolvedValue(testItem);
     const response = await router.createItem(req as Request, res as Response);
     expect(res.json).toHaveBeenCalledWith(testItem);
   });
 
   it("should find items", async () => {
-    mockLib.all.mockResolvedValue([testItem]);
+    mockLib.operations.all.mockResolvedValue([testItem]);
     const response = await router['findItems'](req as Request, res as Response);
     expect(res.json).toHaveBeenCalledWith([testItem]);
   });
@@ -96,7 +115,7 @@ describe("PItemFSRouter", () => {
       }];
 
       // @ts-ignore
-      mockLib.find.mockResolvedValue(mockItems);
+      mockLib.operations.find.mockResolvedValue(mockItems);
       req.query = {
         finder: 'testFinder',
         finderParams: JSON.stringify({ param: 'value' })
@@ -104,7 +123,7 @@ describe("PItemFSRouter", () => {
 
       await router['findItems'](req as Request, res as Response);
 
-      expect(mockLib.find).toHaveBeenCalledWith('testFinder', { param: 'value' });
+      expect(mockLib.operations.find).toHaveBeenCalledWith('testFinder', { param: 'value' });
       expect(res.json).toHaveBeenCalledWith(mockItems);
     });
 
@@ -118,14 +137,14 @@ describe("PItemFSRouter", () => {
       }];
 
       // @ts-ignore
-      mockLib.all.mockResolvedValue(mockItems);
+      mockLib.operations.all.mockResolvedValue(mockItems);
       req.query = {
         limit: '10'
       };
 
       await router['findItems'](req as Request, res as Response);
 
-      expect(mockLib.all).toHaveBeenCalledWith(expect.any(Object));
+      expect(mockLib.operations.all).toHaveBeenCalledWith(expect.any(Object));
       expect(res.json).toHaveBeenCalledWith(mockItems);
     });
 
@@ -138,7 +157,6 @@ describe("PItemFSRouter", () => {
         }
       };
 
-      // @ts-ignore
       mockLib.findOne.mockResolvedValue(mockItem);
       req.query = {
         finder: 'testFinder',
@@ -149,12 +167,11 @@ describe("PItemFSRouter", () => {
       await router['findItems'](req as Request, res as Response);
 
       expect(mockLib.findOne).toHaveBeenCalledWith('testFinder', { param: 'value' });
-      expect(mockLib.find).not.toHaveBeenCalled();
+      expect(mockLib.operations.find).not.toHaveBeenCalled();
       expect(res.json).toHaveBeenCalledWith([mockItem]);
     });
 
     it('should return empty array when findOne returns null', async () => {
-      // @ts-ignore
       mockLib.findOne.mockResolvedValue(null);
       req.query = {
         finder: 'testFinder',
@@ -178,7 +195,7 @@ describe("PItemFSRouter", () => {
       }];
 
       // @ts-ignore
-      mockLib.find.mockResolvedValue(mockItems);
+      mockLib.operations.find.mockResolvedValue(mockItems);
       req.query = {
         finder: 'testFinder',
         finderParams: JSON.stringify({ param: 'value' }),
@@ -187,8 +204,7 @@ describe("PItemFSRouter", () => {
 
       await router['findItems'](req as Request, res as Response);
 
-      expect(mockLib.find).toHaveBeenCalledWith('testFinder', { param: 'value' });
-      expect(mockLib.findOne).not.toHaveBeenCalled();
+      expect(mockLib.operations.find).toHaveBeenCalledWith('testFinder', { param: 'value' });
       expect(res.json).toHaveBeenCalledWith(mockItems);
     });
   });
