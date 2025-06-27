@@ -3,7 +3,6 @@ import {
   cPK,
   Item,
   ItemEvent,
-  ItemProperties,
   LocKey,
   LocKeyArray,
   PriKey,
@@ -322,13 +321,12 @@ export class ItemRouter<
     this.logger.debug('Updating Item',
       { body: req?.body, query: req?.query, params: req?.params, locals: res?.locals });
     const ik = this.getIk(res);
-    const itemToUpdate = this.convertDates(req.body as ItemProperties<S, L1, L2, L3, L4, L5>);
+    const itemToUpdate = this.convertDates(req.body as Partial<Item<S, L1, L2, L3, L4, L5>>);
     const retItem = validatePK(await libOperations.update(ik, itemToUpdate), this.getPkType());
     res.json(retItem);
   };
 
-  public convertDates = (item: Item<S, L1, L2, L3, L4, L5> | ItemProperties<S, L1, L2, L3, L4, L5>):
-    Item<S, L1, L2, L3, L4, L5> | ItemProperties<S, L1, L2, L3, L4, L5> => {
+  public convertDates = (item: Partial<Item<S, L1, L2, L3, L4, L5>>): Partial<Item<S, L1, L2, L3, L4, L5>> => {
     const events = item.events as Record<string, ItemEvent>;
     this.logger.debug('Converting Dates', { item });
     if (events) {
