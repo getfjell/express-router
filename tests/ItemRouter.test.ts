@@ -240,6 +240,7 @@ describe("ItemRouter", () => {
       events: {}
     };
 
+    // @ts-ignore - Testing edge case where events object is empty
     const convertedItem = router["convertDates"](itemWithEmptyEvents);
     expect(convertedItem.events).toEqual({});
   });
@@ -254,6 +255,7 @@ describe("ItemRouter", () => {
       }
     };
 
+    // @ts-ignore - Testing edge case where dates are null
     const convertedItem = router["convertDates"](itemWithNullDates);
     expect(convertedItem.events?.created.at).toBeNull();
     expect(convertedItem.events?.updated.at).toBeNull();
