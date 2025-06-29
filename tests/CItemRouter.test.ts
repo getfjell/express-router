@@ -1,31 +1,10 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
+import { CItemRouter } from "@/CItemRouter";
 import { ComKey, Item, LocKeyArray, PriKey, UUID } from "@fjell/core";
 import { Request, Response } from "express";
-import { ItemRouter } from "@/ItemRouter";
-import { CItemRouter } from "@/CItemRouter";
-import { Contained } from "@fjell/lib";
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('@fjell/logging', () => ({
-  default: {
-    get: vi.fn().mockReturnThis(),
-    getLogger: vi.fn().mockReturnThis(),
-    default: vi.fn(),
-    error: vi.fn(),
-    warning: vi.fn(),
-    info: vi.fn(),
-    debug: vi.fn(),
-    trace: vi.fn(),
-    emergency: vi.fn(),
-    alert: vi.fn(),
-    critical: vi.fn(),
-    notice: vi.fn(),
-    time: vi.fn().mockReturnThis(),
-    end: vi.fn(),
-    log: vi.fn(),
-  }
-}));
-vi.mock("@fjell/lib");
+// Logger and lib mocks are now handled globally in tests/setup.ts
 
 describe("CItemRouter", () => {
   let mockLib: any;
@@ -47,10 +26,34 @@ describe("CItemRouter", () => {
 
   beforeEach(() => {
     vi.resetAllMocks();
-    mockLib = { find: vi.fn(), findOne: vi.fn(), all: vi.fn(), create: vi.fn() };
+    mockLib = {
+      operations: {
+        find: vi.fn(),
+        findOne: vi.fn(),
+        all: vi.fn(),
+        create: vi.fn(),
+        get: vi.fn(),
+        update: vi.fn(),
+        remove: vi.fn(),
+        action: vi.fn(),
+        facet: vi.fn(),
+        allAction: vi.fn(),
+        allFacet: vi.fn()
+      },
+      definition: {
+        options: {
+          actions: {},
+          facets: {},
+          allActions: {},
+          allFacets: {}
+        }
+      },
+      // Add findOne directly to lib for compatibility with CItemRouter's usage
+      findOne: vi.fn()
+    };
     mockParentRoute = { getLKA: vi.fn(), getLk: vi.fn(), getPk: vi.fn(), getPkType: vi.fn(), getLocations: vi.fn() };
     router = new CItemRouter(mockLib, "test", mockParentRoute);
-    req = {} as Request;
+    req = { path: '/test/path' } as Request;
     res = { json: vi.fn(), locals: {} } as unknown as Response;
   });
 
@@ -88,10 +91,10 @@ describe("CItemRouter", () => {
     const items = [testItem];
     req.query = query;
     vi.spyOn(router, "getLocations").mockReturnValue(locKeyArray);
-    mockLib.all = vi.fn().mockResolvedValue(items);
+    mockLib.operations.all = vi.fn().mockResolvedValue(items);
     await router['findItems'](req, res);
     expect(router.getLocations).toHaveBeenCalledWith(res);
-    expect(mockLib.all).toHaveBeenCalledWith(expect.any(Object), locKeyArray);
+    expect(mockLib.operations.all).toHaveBeenCalledWith(expect.any(Object), locKeyArray);
     expect(res.json).toHaveBeenCalledWith(items.map((item) => expect.any(Object)));
   });
 
@@ -99,22 +102,22 @@ describe("CItemRouter", () => {
     const query = { some: "query" };
     req.query = query;
     vi.spyOn(router, "getLocations").mockReturnValue(locKeyArray);
-    mockLib.all = vi.fn().mockRejectedValue(new Error("Test error"));
+    mockLib.operations.all = vi.fn().mockRejectedValue(new Error("Test error"));
     await expect(router['findItems'](req, res)).rejects.toThrow("Test error");
     expect(router.getLocations).toHaveBeenCalledWith(res);
-    expect(mockLib.all).toHaveBeenCalledWith(expect.any(Object), locKeyArray);
+    expect(mockLib.operations.all).toHaveBeenCalledWith(expect.any(Object), locKeyArray);
   });
 
   it("should create an item and return it as JSON", async () => {
     req.body = testItem;
     vi.spyOn(router, "getLocations").mockReturnValue(locKeyArray);
     vi.spyOn(router, "convertDates").mockReturnValue(testItem);
-    mockLib.create = vi.fn().mockResolvedValue(testItem);
+    mockLib.operations.create = vi.fn().mockResolvedValue(testItem);
     vi.spyOn(router, "postCreateItem").mockResolvedValue(testItem);
     await router['createItem'](req, res);
     expect(router.getLocations).toHaveBeenCalledWith(res);
     expect(router.convertDates).toHaveBeenCalledWith(testItem);
-    expect(mockLib.create).toHaveBeenCalledWith(testItem, { locations: locKeyArray });
+    expect(mockLib.operations.create).toHaveBeenCalledWith(testItem, { locations: locKeyArray });
     expect(router.postCreateItem).toHaveBeenCalledWith(testItem);
     expect(res.json).toHaveBeenCalledWith(testItem);
   });
@@ -123,11 +126,11 @@ describe("CItemRouter", () => {
     req.body = testItem;
     vi.spyOn(router, "getLocations").mockReturnValue(locKeyArray);
     vi.spyOn(router, "convertDates").mockReturnValue(testItem);
-    mockLib.create = vi.fn().mockRejectedValue(new Error("Test error"));
+    mockLib.operations.create = vi.fn().mockRejectedValue(new Error("Test error"));
     await expect(router['createItem'](req, res)).rejects.toThrow("Test error");
     expect(router.getLocations).toHaveBeenCalledWith(res);
     expect(router.convertDates).toHaveBeenCalledWith(testItem);
-    expect(mockLib.create).toHaveBeenCalledWith(testItem, { locations: locKeyArray });
+    expect(mockLib.operations.create).toHaveBeenCalledWith(testItem, { locations: locKeyArray });
   });
 
   describe('findItems', () => {
@@ -139,18 +142,18 @@ describe("CItemRouter", () => {
     });
 
     it('should find items using finder when finder param exists', async () => {
-      mockLib.find.mockResolvedValue(mockItems);
+      mockLib.operations.find.mockResolvedValue(mockItems);
       req.query = { finder: 'testFinder', finderParams: JSON.stringify({ param: 'value' }) };
       await router['findItems'](req as Request, res as Response);
-      expect(mockLib.find).toHaveBeenCalledWith('testFinder', { param: 'value' }, mockParentLKA);
+      expect(mockLib.operations.find).toHaveBeenCalledWith('testFinder', { param: 'value' }, mockParentLKA);
       expect(res.json).toHaveBeenCalledWith(mockItems);
     });
 
     it('should find items using query when no finder exists', async () => {
-      mockLib.all.mockResolvedValue(mockItems);
+      mockLib.operations.all.mockResolvedValue(mockItems);
       req.query = { limit: '10' };
       await router['findItems'](req as Request, res as Response);
-      expect(mockLib.all).toHaveBeenCalledWith({ "limit": 10 }, mockParentLKA);
+      expect(mockLib.operations.all).toHaveBeenCalledWith({ "limit": 10 }, mockParentLKA);
       expect(res.json).toHaveBeenCalledWith(mockItems);
     });
 
@@ -160,7 +163,7 @@ describe("CItemRouter", () => {
       req.query = { finder: 'testFinder', finderParams: JSON.stringify({ param: 'value' }), one: 'true' };
       await router['findItems'](req as Request, res as Response);
       expect(mockLib.findOne).toHaveBeenCalledWith('testFinder', { param: 'value' }, mockParentLKA);
-      expect(mockLib.find).not.toHaveBeenCalled();
+      expect(mockLib.operations.find).not.toHaveBeenCalled();
       expect(res.json).toHaveBeenCalledWith([mockItem]);
     });
 
@@ -173,10 +176,10 @@ describe("CItemRouter", () => {
     });
 
     it('should use find when one parameter is not true', async () => {
-      mockLib.find.mockResolvedValue(mockItems);
+      mockLib.operations.find.mockResolvedValue(mockItems);
       req.query = { finder: 'testFinder', finderParams: JSON.stringify({ param: 'value' }), one: 'false' };
       await router['findItems'](req as Request, res as Response);
-      expect(mockLib.find).toHaveBeenCalledWith('testFinder', { param: 'value' }, mockParentLKA);
+      expect(mockLib.operations.find).toHaveBeenCalledWith('testFinder', { param: 'value' }, mockParentLKA);
       expect(mockLib.findOne).not.toHaveBeenCalled();
       expect(res.json).toHaveBeenCalledWith(mockItems);
     });
@@ -214,7 +217,11 @@ describe("CItemRouter", () => {
         one: 'true'
       }]
     ])('should handle error in %s', async (_, method, query) => {
-      mockLib[method].mockRejectedValue(new Error(`${method} error`));
+      if (method === 'findOne') {
+        mockLib[method].mockRejectedValue(new Error(`${method} error`));
+      } else {
+        mockLib.operations[method].mockRejectedValue(new Error(`${method} error`));
+      }
       req.query = query;
       await expect(router['findItems'](req as Request, res as Response)).rejects.toThrow(`${method} error`);
     });
@@ -247,7 +254,7 @@ describe("CItemRouter", () => {
 
     it('should handle error in postCreateItem', async () => {
       vi.spyOn(router, "convertDates").mockReturnValue(testItem);
-      mockLib.create = vi.fn().mockResolvedValue(testItem);
+      mockLib.operations.create = vi.fn().mockResolvedValue(testItem);
       vi.spyOn(router, "postCreateItem").mockRejectedValue(new Error("PostCreate error"));
       await expect(router['createItem'](req, res)).rejects.toThrow("PostCreate error");
       expect(router.postCreateItem).toHaveBeenCalledWith(testItem);

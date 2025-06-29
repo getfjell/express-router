@@ -2,9 +2,6 @@ import { Item, ItemQuery, paramsToQuery, PriKey, QueryParams, validatePK } from 
 import { Primary } from "@fjell/lib";
 import { ItemRouter, ItemRouterOptions } from "@/ItemRouter";
 import { Request, Response } from "express";
-import LibLogger from "@/logger";
-
-const logger = LibLogger.get('PItemRouter');
 
 interface ParsedQuery {
   [key: string]: undefined | string | string[] | ParsedQuery | ParsedQuery[];
@@ -12,7 +9,7 @@ interface ParsedQuery {
 
 export class PItemRouter<T extends Item<S>, S extends string> extends ItemRouter<S> {
 
-  constructor(lib: Primary.Operations<T, S>, keyType: S, options: ItemRouterOptions = {}) {
+  constructor(lib: Primary.Instance<T, S>, keyType: S, options: ItemRouterOptions = {}) {
     super(lib as any, keyType, options);
   }
 
@@ -22,16 +19,18 @@ export class PItemRouter<T extends Item<S>, S extends string> extends ItemRouter
   }
 
   public createItem = async (req: Request, res: Response) => {
-    logger.default('Creating Item 2', { body: req.body, query: req.query, params: req.params, locals: res.locals });
+    const libOperations = this.lib.operations;
+    this.logger.default('Creating Item', { body: req.body, query: req.query, params: req.params, locals: res.locals });
     const itemToCreate = this.convertDates(req.body as Item<S>);
-    let item =
-      validatePK(await this.lib.create(itemToCreate), this.getPkType()) as Item<S>;
+    let item = validatePK(await libOperations.create(itemToCreate), this.getPkType()) as Item<S>;
     item = await this.postCreateItem(item);
+    this.logger.default('Created Item %j', item);
     res.json(item);
   };
 
   protected findItems = async (req: Request, res: Response) => {
-    logger.default('Finding Items', { query: req.query, params: req.params, locals: res.locals });
+    const libOperations = this.lib.operations;
+    this.logger.default('Finding Items', { query: req.query, params: req.params, locals: res.locals });
 
     let items: Item<S>[] = [];
 
@@ -42,19 +41,19 @@ export class PItemRouter<T extends Item<S>, S extends string> extends ItemRouter
 
     if (finder) {
       // If finder is defined?  Call a finder.
-      logger.default('Finding Items with a finder', { finder, finderParams, one });
+      this.logger.default('Finding Items with Finder %s %j one:%s', finder, finderParams, one);
 
       if (one === 'true') {
         const item = await (this.lib as any).findOne(finder, JSON.parse(finderParams));
         items = item ? [item] : [];
       } else {
-        items = await this.lib.find(finder, JSON.parse(finderParams));
+        items = await libOperations.find(finder, JSON.parse(finderParams));
       }
     } else {
-      logger.default('Finding Items with a query', { query: req.query });
       // TODO: This is once of the more important places to perform some validaation and feedback
       const itemQuery: ItemQuery = paramsToQuery(req.query as QueryParams);
-      items = await this.lib.all(itemQuery);
+      this.logger.default('Finding Items with a query %j', itemQuery);
+      items = await libOperations.all(itemQuery);
     }
 
     res.json(items.map((item: Item<S>) => validatePK(item, this.getPkType())));

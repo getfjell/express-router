@@ -71,6 +71,7 @@ export default defineVitestConfig({
     sourcemap: true
   },
   test: {
+    setupFiles: ['./tests/setup.ts'],
     include: [
       'tests/**/*.test.ts',
       'tests/**/*.spec.ts',
