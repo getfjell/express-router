@@ -58,12 +58,12 @@ export class CItemRouter<
 
   protected createItem = async (req: Request, res: Response) => {
     const libOperations = this.lib.operations;
-    this.logger.debug('Creating Item', { body: req?.body, query: req?.query, params: req?.params, locals: res?.locals });
+    this.logger.default('Creating Item', { body: req?.body, query: req?.query, params: req?.params, locals: res?.locals });
     const itemToCreate = this.convertDates(req.body as Item<S, L1, L2, L3, L4, L5>);
     let item = validatePK(await libOperations.create(
       itemToCreate, { locations: this.getLocations(res) }), this.getPkType()) as Item<S, L1, L2, L3, L4, L5>;
     item = await this.postCreateItem(item);
-    this.logger.debug('Created Item %j', item);
+    this.logger.default('Created Item %j', item);
     res.json(item);
   };
 
@@ -78,7 +78,7 @@ export class CItemRouter<
 
     if (finder) {
       // If finder is defined?  Call a finder.
-      this.logger.debug('Finding Items with Finder', { finder, finderParams, one });
+      this.logger.default('Finding Items with Finder', { finder, finderParams, one });
 
       if (one === 'true') {
         const item = await (this.lib as any).findOne(finder, JSON.parse(finderParams), this.getLocations(res));
@@ -89,9 +89,9 @@ export class CItemRouter<
     } else {
       // TODO: This is once of the more important places to perform some validaation and feedback
       const itemQuery: ItemQuery = paramsToQuery(req.query as QueryParams);
-      this.logger.debug('Finding Items with Query: %j', itemQuery);
+      this.logger.default('Finding Items with Query: %j', itemQuery);
       items = await libOperations.all(itemQuery, this.getLocations(res));
-      this.logger.debug('Found %d Items with Query', items.length);
+      this.logger.default('Found %d Items with Query', items.length);
     }
 
     res.json(items.map((item: Item<S, L1, L2, L3, L4, L5>) => validatePK(item, this.getPkType())));

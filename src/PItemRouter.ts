@@ -20,17 +20,17 @@ export class PItemRouter<T extends Item<S>, S extends string> extends ItemRouter
 
   public createItem = async (req: Request, res: Response) => {
     const libOperations = this.lib.operations;
-    this.logger.debug('Creating Item', { body: req.body, query: req.query, params: req.params, locals: res.locals });
+    this.logger.default('Creating Item', { body: req.body, query: req.query, params: req.params, locals: res.locals });
     const itemToCreate = this.convertDates(req.body as Item<S>);
     let item = validatePK(await libOperations.create(itemToCreate), this.getPkType()) as Item<S>;
     item = await this.postCreateItem(item);
-    this.logger.debug('Created Item %j', item);
+    this.logger.default('Created Item %j', item);
     res.json(item);
   };
 
   protected findItems = async (req: Request, res: Response) => {
     const libOperations = this.lib.operations;
-    this.logger.debug('Finding Items', { query: req.query, params: req.params, locals: res.locals });
+    this.logger.default('Finding Items', { query: req.query, params: req.params, locals: res.locals });
 
     let items: Item<S>[] = [];
 
@@ -41,7 +41,7 @@ export class PItemRouter<T extends Item<S>, S extends string> extends ItemRouter
 
     if (finder) {
       // If finder is defined?  Call a finder.
-      this.logger.debug('Finding Items with Finder %s %j one:%s', finder, finderParams, one);
+      this.logger.default('Finding Items with Finder %s %j one:%s', finder, finderParams, one);
 
       if (one === 'true') {
         const item = await (this.lib as any).findOne(finder, JSON.parse(finderParams));
@@ -52,7 +52,7 @@ export class PItemRouter<T extends Item<S>, S extends string> extends ItemRouter
     } else {
       // TODO: This is once of the more important places to perform some validaation and feedback
       const itemQuery: ItemQuery = paramsToQuery(req.query as QueryParams);
-      this.logger.debug('Finding Items with a query %j', itemQuery);
+      this.logger.default('Finding Items with a query %j', itemQuery);
       items = await libOperations.all(itemQuery);
     }
 
