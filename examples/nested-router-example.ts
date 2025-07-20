@@ -201,7 +201,7 @@ const createOrgOperations = () => ({
     return Array.from(mockOrgStorage.values());
   },
   async get(key: PriKey<'organization'>) {
-    const org = mockOrgStorage.get(key.pk);
+    const org = mockOrgStorage.get(String(key.pk));
     if (!org) throw new Error(`Organization not found: ${key.pk}`);
     return org;
   },
@@ -221,14 +221,14 @@ const createOrgOperations = () => ({
     return newOrg;
   },
   async update(key: PriKey<'organization'>, updates: Partial<Organization>) {
-    const existing = mockOrgStorage.get(key.pk);
+    const existing = mockOrgStorage.get(String(key.pk));
     if (!existing) throw new Error(`Organization not found: ${key.pk}`);
     const updated = { ...existing, ...updates };
-    mockOrgStorage.set(key.pk, updated);
+    mockOrgStorage.set(String(key.pk), updated);
     return updated;
   },
   async remove(key: PriKey<'organization'>) {
-    return mockOrgStorage.delete(key.pk);
+    return mockOrgStorage.delete(String(key.pk));
   },
   async find(finder: string, params: any) {
     const orgs = Array.from(mockOrgStorage.values());
@@ -248,7 +248,7 @@ const createDeptOperations = () => ({
     return Array.from(mockDeptStorage.values());
   },
   async get(key: ComKey<'department', 'organization'>) {
-    const dept = mockDeptStorage.get(key.pk);
+    const dept = mockDeptStorage.get(String(key.pk));
     if (!dept) throw new Error(`Department not found: ${key.pk}`);
     return dept;
   },
@@ -260,7 +260,7 @@ const createDeptOperations = () => ({
       key: {
         kt: 'department',
         pk: id as UUID,
-        loc: item.key?.loc || []
+        loc: (item.key as any)?.loc || []
       },
       events: {
         created: { at: new Date() },
@@ -272,14 +272,14 @@ const createDeptOperations = () => ({
     return newDept;
   },
   async update(key: ComKey<'department', 'organization'>, updates: Partial<Department>) {
-    const existing = mockDeptStorage.get(key.pk);
+    const existing = mockDeptStorage.get(String(key.pk));
     if (!existing) throw new Error(`Department not found: ${key.pk}`);
     const updated = { ...existing, ...updates };
-    mockDeptStorage.set(key.pk, updated);
+    mockDeptStorage.set(String(key.pk), updated);
     return updated;
   },
   async remove(key: ComKey<'department', 'organization'>) {
-    return mockDeptStorage.delete(key.pk);
+    return mockDeptStorage.delete(String(key.pk));
   },
   async find(finder: string, params: any) {
     const depts = Array.from(mockDeptStorage.values());
@@ -299,7 +299,7 @@ const createEmpOperations = () => ({
     return Array.from(mockEmpStorage.values());
   },
   async get(key: ComKey<'employee', 'organization', 'department'>) {
-    const emp = mockEmpStorage.get(key.pk);
+    const emp = mockEmpStorage.get(String(key.pk));
     if (!emp) throw new Error(`Employee not found: ${key.pk}`);
     return emp;
   },
@@ -311,7 +311,7 @@ const createEmpOperations = () => ({
       key: {
         kt: 'employee',
         pk: id as UUID,
-        loc: item.key?.loc || []
+        loc: (item.key as any)?.loc || []
       },
       events: {
         created: { at: new Date() },
@@ -323,14 +323,14 @@ const createEmpOperations = () => ({
     return newEmp;
   },
   async update(key: ComKey<'employee', 'organization', 'department'>, updates: Partial<Employee>) {
-    const existing = mockEmpStorage.get(key.pk);
+    const existing = mockEmpStorage.get(String(key.pk));
     if (!existing) throw new Error(`Employee not found: ${key.pk}`);
     const updated = { ...existing, ...updates };
-    mockEmpStorage.set(key.pk, updated);
+    mockEmpStorage.set(String(key.pk), updated);
     return updated;
   },
   async remove(key: ComKey<'employee', 'organization', 'department'>) {
-    return mockEmpStorage.delete(key.pk);
+    return mockEmpStorage.delete(String(key.pk));
   },
   async find(finder: string, params: any) {
     const employees = Array.from(mockEmpStorage.values());
