@@ -75,7 +75,7 @@ export class ItemRouter<
   }
 
   protected postAllAction = async (req: Request, res: Response) => {
-    const libOptions = this.lib.definition.options;
+    const libOptions = this.lib.options;
     const libOperations = this.lib.operations;
     this.logger.debug('Posting All Action', { query: req?.query, params: req?.params, locals: res?.locals });
     const allActionKey = req.path.substring(req.path.lastIndexOf('/') + 1);
@@ -99,7 +99,7 @@ export class ItemRouter<
   }
 
   protected getAllFacet = async (req: Request, res: Response) => {
-    const libOptions = this.lib.definition.options;
+    const libOptions = this.lib.options;
     const libOperations = this.lib.operations;
     this.logger.debug('Getting All Facet', { query: req?.query, params: req?.params, locals: res?.locals });
     const facetKey = req.path.substring(req.path.lastIndexOf('/') + 1);
@@ -124,7 +124,7 @@ export class ItemRouter<
   }
 
   protected postItemAction = async (req: Request, res: Response) => {
-    const libOptions = this.lib.definition.options;
+    const libOptions = this.lib.options;
     const libOperations = this.lib.operations;
     this.logger.debug('Getting Item', { query: req?.query, params: req?.params, locals: res?.locals });
     const ik = this.getIk(res);
@@ -149,7 +149,7 @@ export class ItemRouter<
   }
 
   protected getItemFacet = async (req: Request, res: Response) => {
-    const libOptions = this.lib.definition.options;
+    const libOptions = this.lib.options;
     const libOperations = this.lib.operations;
     this.logger.debug('Getting Item', { query: req?.query, params: req?.params, locals: res?.locals });
     const ik = this.getIk(res);
@@ -175,7 +175,7 @@ export class ItemRouter<
   }
 
   private configure = (router: Router) => {
-    const libOptions = this.lib.definition.options;
+    const libOptions = this.lib.options;
     this.logger.debug('Configuring Router', { pkType: this.getPkType() });
     router.get('/', this.findItems);
     router.post('/', this.createItem);

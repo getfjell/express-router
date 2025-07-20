@@ -1,63 +1,64 @@
 {
-    "name": "@fjell/express-router",
-    "version": "4.4.8",
-    "license": "Apache-2.0",
-    "keywords": [
-        "express",
-        "router",
-        "fjell"
-    ],
-    "description": "Express Router for Fjell",
-    "engines": {
-        "node": ">=21"
-    },
-    "main": "dist/index.cjs",
-    "module": "dist/index.js",
-    "exports": {
-        ".": {
-            "types": "./dist/index.d.ts",
-            "import": "./dist/index.js",
-            "require": "./dist/index.cjs"
-        }
-    },
-    "type": "module",
-    "scripts": {
-        "build": "tsc --noEmit && vite build",
-        "dev": "nodemon --watch src --ext ts --exec 'pnpm build'",
-        "lint": "eslint . --ext .ts --fix",
-        "clean": "rimraf dist",
-        "test": "pnpm run lint && vitest run --coverage",
-        "prepublishOnly": "pnpm run clean && pnpm run build"
-    },
-    "dependencies": {
-        "@fjell/core": "^4.4.7",
-        "@fjell/lib": "^4.4.10",
-        "@fjell/logging": "^4.4.7",
-        "deepmerge": "^4.3.1",
-        "express": "^5.1.0"
-    },
-    "devDependencies": {
-        "@eslint/eslintrc": "^3.3.1",
-        "@eslint/js": "^9.31.0",
-        "@swc/core": "^1.12.14",
-        "@tsconfig/recommended": "^1.0.10",
-        "@types/express": "^5.0.3",
-        "@types/node": "^24.0.14",
-        "@typescript-eslint/eslint-plugin": "^8.37.0",
-        "@typescript-eslint/parser": "^8.37.0",
-        "@vitest/coverage-v8": "^3.2.4",
-        "eslint": "^9.31.0",
-        "nodemon": "^3.1.10",
-        "rimraf": "^6.0.1",
-        "typescript": "^5.8.3",
-        "vite": "^7.0.4",
-        "vite-plugin-dts": "^4.5.4",
-        "vite-plugin-node": "^7.0.0",
-        "vitest": "^3.2.4"
-    },
-    "packageManager": "pnpm@10.13.1",
-    "repository": {
-        "type": "git",
-        "url": "git+https://github.com/getfjell/express-router.git"
+  "name": "@fjell/express-router",
+  "version": "4.4.10",
+  "license": "Apache-2.0",
+  "keywords": [
+    "express",
+    "router",
+    "fjell"
+  ],
+  "description": "Express Router for Fjell",
+  "engines": {
+    "node": ">=21"
+  },
+  "main": "dist/index.cjs",
+  "module": "dist/index.js",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
     }
+  },
+  "type": "module",
+  "scripts": {
+    "build": "tsc --noEmit && vite build",
+    "dev": "nodemon --watch src --ext ts --exec 'pnpm build'",
+    "lint": "eslint . --ext .ts --fix",
+    "clean": "rimraf dist",
+    "test": "pnpm run lint && vitest run --coverage",
+    "prepublishOnly": "pnpm run clean && pnpm run build"
+  },
+  "dependencies": {
+    "@fjell/core": "^4.4.7",
+    "@fjell/lib": "^4.4.11",
+    "@fjell/logging": "^4.4.7",
+    "@fjell/registry": "^4.4.7",
+    "deepmerge": "^4.3.1",
+    "express": "^5.1.0"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3.3.1",
+    "@eslint/js": "^9.31.0",
+    "@swc/core": "^1.13.1",
+    "@tsconfig/recommended": "^1.0.10",
+    "@types/express": "^5.0.3",
+    "@types/node": "^24.0.15",
+    "@typescript-eslint/eslint-plugin": "^8.37.0",
+    "@typescript-eslint/parser": "^8.37.0",
+    "@vitest/coverage-v8": "^3.2.4",
+    "eslint": "^9.31.0",
+    "nodemon": "^3.1.10",
+    "rimraf": "^6.0.1",
+    "typescript": "^5.8.3",
+    "vite": "^7.0.5",
+    "vite-plugin-dts": "^4.5.4",
+    "vite-plugin-node": "^7.0.0",
+    "vitest": "^3.2.4"
+  },
+  "packageManager": "pnpm@10.13.1",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/getfjell/express-router.git"
+  }
 }
