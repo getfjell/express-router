@@ -3,7 +3,7 @@ import {
 } from "@fjell/core";
 import { Request, Response } from "express";
 import { ItemRouter, ItemRouterOptions } from "@/ItemRouter";
-import { Contained } from "@fjell/lib";
+import { Instance } from "@fjell/lib";
 
 interface ParsedQuery {
   [key: string]: undefined | string | string[] | ParsedQuery | ParsedQuery[];
@@ -22,7 +22,7 @@ export class CItemRouter<
   private parentRoute: ItemRouter<L1, L2, L3, L4, L5, never>;
 
   constructor(
-    lib: Contained.Instance<T, S, L1, L2, L3, L4, L5>,
+    lib: Instance<T, S, L1, L2, L3, L4, L5>,
     type: S,
     parentRoute: ItemRouter<L1, L2, L3, L4, L5, never>,
     options: ItemRouterOptions = {},
