@@ -1,5 +1,5 @@
 import { Item, ItemQuery, paramsToQuery, PriKey, QueryParams, validatePK } from "@fjell/core";
-import { Primary } from "@fjell/lib";
+import { Instance } from "@fjell/lib";
 import { ItemRouter, ItemRouterOptions } from "@/ItemRouter";
 import { Request, Response } from "express";
 
@@ -9,7 +9,7 @@ interface ParsedQuery {
 
 export class PItemRouter<T extends Item<S>, S extends string> extends ItemRouter<S> {
 
-  constructor(lib: Primary.Instance<T, S>, keyType: S, options: ItemRouterOptions = {}) {
+  constructor(lib: Instance<T, S>, keyType: S, options: ItemRouterOptions = {}) {
     super(lib as any, keyType, options);
   }
 

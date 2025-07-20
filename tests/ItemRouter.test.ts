@@ -118,20 +118,18 @@ describe("ItemRouter", () => {
           throw new Error('All Facet not found');
         })
       },
-      definition: {
-        options: {
-          actions: {
-            customAction: vi.fn().mockResolvedValue({ customAction: true }),
-          },
-          facets: {
-            customFacet: vi.fn().mockResolvedValue({ facet: "customFacet" }),
-          },
-          allActions: {
-            customAllAction: vi.fn().mockResolvedValue({ allAction: true }),
-          },
-          allFacets: {
-            customAllFacet: vi.fn().mockResolvedValue({ facet: "customAllFacet" }),
-          }
+      options: {
+        actions: {
+          customAction: vi.fn().mockResolvedValue({ customAction: true }),
+        },
+        facets: {
+          customFacet: vi.fn().mockResolvedValue({ facet: "customFacet" }),
+        },
+        allActions: {
+          customAllAction: vi.fn().mockResolvedValue({ allAction: true }),
+        },
+        allFacets: {
+          customAllFacet: vi.fn().mockResolvedValue({ facet: "customAllFacet" }),
         }
       }
     };
@@ -424,9 +422,7 @@ describe("ItemRouter", () => {
           remove: vi.fn(),
           update: vi.fn(),
         },
-        definition: {
-          options: {}
-        }
+        options: {}
       };
       const abstractRouter = new TestItemRouterNoActions(libWithoutActions as any, "test");
       // @ts-ignore
@@ -467,9 +463,7 @@ describe("ItemRouter", () => {
           remove: vi.fn(),
           update: vi.fn(),
         },
-        definition: {
-          options: {}
-        }
+        options: {}
       };
       const abstractRouter = new TestItemRouterNoActions(libWithoutFacets as any, "test");
       // @ts-ignore
@@ -536,9 +530,7 @@ describe("ItemRouter", () => {
           remove: vi.fn(),
           update: vi.fn(),
         },
-        definition: {
-          options: {}
-        }
+        options: {}
       };
       const abstractRouter = new TestItemRouterNoActions(libWithoutAllActions as any, "test");
       // @ts-ignore
@@ -601,9 +593,7 @@ describe("ItemRouter", () => {
           remove: vi.fn(),
           update: vi.fn(),
         },
-        definition: {
-          options: {}
-        }
+        options: {}
       };
       const abstractRouter = new TestItemRouterNoActions(libWithoutAllFacets as any, "test");
       // @ts-ignore

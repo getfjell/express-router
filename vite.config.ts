@@ -80,6 +80,10 @@ export default defineVitestConfig({
       provider: 'v8',
       reporter: ['text', 'html', 'lcov'],
       reportsDirectory: './coverage',
+      include: [
+        'src/**/*.ts',
+        'examples/**/*.ts',
+      ],
       exclude: [
         'node_modules/',
         'tests/',
