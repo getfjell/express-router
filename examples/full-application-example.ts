@@ -262,7 +262,7 @@ const initializeSampleData = () => {
 const createCustomerOperations = () => ({
   async all() { return Array.from(mockCustomerStorage.values()); },
   async get(key: PriKey<'customer'>) {
-    const customer = mockCustomerStorage.get(key.pk);
+    const customer = mockCustomerStorage.get(String(key.pk));
     if (!customer) throw new Error(`Customer not found: ${key.pk}`);
     return customer;
   },
@@ -278,14 +278,14 @@ const createCustomerOperations = () => ({
     return newCustomer;
   },
   async update(key: PriKey<'customer'>, updates: Partial<Customer>) {
-    const existing = mockCustomerStorage.get(key.pk);
+    const existing = mockCustomerStorage.get(String(key.pk));
     if (!existing) throw new Error(`Customer not found: ${key.pk}`);
     const updated = { ...existing, ...updates };
-    mockCustomerStorage.set(key.pk, updated);
+    mockCustomerStorage.set(String(key.pk), updated);
     return updated;
   },
   async remove(key: PriKey<'customer'>) {
-    return mockCustomerStorage.delete(key.pk);
+    return mockCustomerStorage.delete(String(key.pk));
   },
   async find(finder: string, params: any) {
     const customers = Array.from(mockCustomerStorage.values());
@@ -300,7 +300,7 @@ const createCustomerOperations = () => ({
 const createProductOperations = () => ({
   async all() { return Array.from(mockProductStorage.values()); },
   async get(key: PriKey<'product'>) {
-    const product = mockProductStorage.get(key.pk);
+    const product = mockProductStorage.get(String(key.pk));
     if (!product) throw new Error(`Product not found: ${key.pk}`);
     return product;
   },
@@ -316,14 +316,14 @@ const createProductOperations = () => ({
     return newProduct;
   },
   async update(key: PriKey<'product'>, updates: Partial<Product>) {
-    const existing = mockProductStorage.get(key.pk);
+    const existing = mockProductStorage.get(String(key.pk));
     if (!existing) throw new Error(`Product not found: ${key.pk}`);
     const updated = { ...existing, ...updates };
-    mockProductStorage.set(key.pk, updated);
+    mockProductStorage.set(String(key.pk), updated);
     return updated;
   },
   async remove(key: PriKey<'product'>) {
-    return mockProductStorage.delete(key.pk);
+    return mockProductStorage.delete(String(key.pk));
   },
   async find(finder: string, params: any) {
     const products = Array.from(mockProductStorage.values());
@@ -340,7 +340,7 @@ const createProductOperations = () => ({
 const createOrderOperations = () => ({
   async all() { return Array.from(mockOrderStorage.values()); },
   async get(key: ComKey<'order', 'customer'>) {
-    const order = mockOrderStorage.get(key.pk);
+    const order = mockOrderStorage.get(String(key.pk));
     if (!order) throw new Error(`Order not found: ${key.pk}`);
     return order;
   },
@@ -349,20 +349,20 @@ const createOrderOperations = () => ({
     const newOrder: Order = {
       ...item,
       id,
-      key: { kt: 'order', pk: id as UUID, loc: item.key?.loc || [] },
+      key: { kt: 'order', pk: id as UUID, loc: (item.key as any)?.loc || [] },
       events: { created: { at: new Date() }, updated: { at: new Date() }, deleted: { at: null } }
     };
     mockOrderStorage.set(id, newOrder);
     return newOrder;
   },
   async update(key: ComKey<'order', 'customer'>, updates: Partial<Order>) {
-    const existing = mockOrderStorage.get(key.pk);
+    const existing = mockOrderStorage.get(String(key.pk));
     if (!existing) throw new Error(`Order not found: ${key.pk}`);
     const updated = { ...existing, ...updates };
-    mockOrderStorage.set(key.pk, updated);
+    mockOrderStorage.set(String(key.pk), updated);
     return updated;
   },
-  async remove(key: ComKey<'order', 'customer'>) { return mockOrderStorage.delete(key.pk); },
+  async remove(key: ComKey<'order', 'customer'>) { return mockOrderStorage.delete(String(key.pk)); },
   async find(finder: string, params: any) {
     const orders = Array.from(mockOrderStorage.values());
     switch (finder) {
@@ -466,7 +466,7 @@ export const runFullApplicationExample = async (): Promise<{ app: Application }>
   app.use('/api/customers/:customerPk/orders', orderRouter.getRouter());
 
   // Business logic routes
-  app.get('/api/dashboard', async (req, res) => {
+  app.get('/api/dashboard', async (req, res, next) => {
     try {
       const customers = await customerInstance.operations.all();
       const products = await productInstance.operations.all();
@@ -500,7 +500,7 @@ export const runFullApplicationExample = async (): Promise<{ app: Application }>
   });
 
   // Product catalog with search and filtering
-  app.get('/api/catalog', async (req, res) => {
+  app.get('/api/catalog', async (req, res, next) => {
     try {
       const { category, featured, minPrice, maxPrice, search } = req.query;
       let products = await productInstance.operations.all();
@@ -536,7 +536,7 @@ export const runFullApplicationExample = async (): Promise<{ app: Application }>
   });
 
   // Customer analytics
-  app.get('/api/customers/:customerPk/analytics', async (req, res) => {
+  app.get('/api/customers/:customerPk/analytics', async (req, res, next) => {
     try {
       const { customerPk } = req.params;
       const customer = await customerInstance.operations.get({ kt: 'customer', pk: customerPk });

@@ -120,7 +120,7 @@ const createUserOperations = () => {
 
     async get(key: PriKey<'user'>) {
       console.log(`🔍 UserOperations.get(${key.pk}) - Fetching user...`);
-      const user = mockUserStorage.get(key.pk);
+      const user = mockUserStorage.get(String(key.pk));
       if (!user) {
         throw new Error(`User not found: ${key.pk}`);
       }
@@ -146,7 +146,7 @@ const createUserOperations = () => {
 
     async update(key: PriKey<'user'>, updates: Partial<User>) {
       console.log(`🔄 UserOperations.update(${key.pk}) - Updating user...`);
-      const existing = mockUserStorage.get(key.pk);
+      const existing = mockUserStorage.get(String(key.pk));
       if (!existing) {
         throw new Error(`User not found: ${key.pk}`);
       }
@@ -158,17 +158,17 @@ const createUserOperations = () => {
           updated: { at: new Date() }
         }
       };
-      mockUserStorage.set(key.pk, updated);
+      mockUserStorage.set(String(key.pk), updated);
       return updated;
     },
 
     async remove(key: PriKey<'user'>) {
       console.log(`🗑️ UserOperations.remove(${key.pk}) - Removing user...`);
-      const existing = mockUserStorage.get(key.pk);
+      const existing = mockUserStorage.get(String(key.pk));
       if (!existing) {
         return false;
       }
-      mockUserStorage.delete(key.pk);
+      mockUserStorage.delete(String(key.pk));
       return true;
     },
 
@@ -197,7 +197,7 @@ const createTaskOperations = () => {
 
     async get(key: PriKey<'task'>) {
       console.log(`🔍 TaskOperations.get(${key.pk}) - Fetching task...`);
-      const task = mockTaskStorage.get(key.pk);
+      const task = mockTaskStorage.get(String(key.pk));
       if (!task) {
         throw new Error(`Task not found: ${key.pk}`);
       }
@@ -223,7 +223,7 @@ const createTaskOperations = () => {
 
     async update(key: PriKey<'task'>, updates: Partial<Task>) {
       console.log(`🔄 TaskOperations.update(${key.pk}) - Updating task...`);
-      const existing = mockTaskStorage.get(key.pk);
+      const existing = mockTaskStorage.get(String(key.pk));
       if (!existing) {
         throw new Error(`Task not found: ${key.pk}`);
       }
@@ -235,17 +235,17 @@ const createTaskOperations = () => {
           updated: { at: new Date() }
         }
       };
-      mockTaskStorage.set(key.pk, updated);
+      mockTaskStorage.set(String(key.pk), updated);
       return updated;
     },
 
     async remove(key: PriKey<'task'>) {
       console.log(`🗑️ TaskOperations.remove(${key.pk}) - Removing task...`);
-      const existing = mockTaskStorage.get(key.pk);
+      const existing = mockTaskStorage.get(String(key.pk));
       if (!existing) {
         return false;
       }
-      mockTaskStorage.delete(key.pk);
+      mockTaskStorage.delete(String(key.pk));
       return true;
     },
 
