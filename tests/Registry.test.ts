@@ -49,7 +49,8 @@ describe('Registry', () => {
       createRegistry: vi.fn(),
       get: vi.fn(),
       getRegisteredTypes: vi.fn(),
-      unregisterRegistry: vi.fn()
+      unregisterRegistry: vi.fn(),
+      getAllCoordinates: vi.fn().mockReturnValue([])
     } as RegistryHub;
 
     // Clear all mocks before each test

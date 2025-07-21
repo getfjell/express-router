@@ -8,7 +8,8 @@ import {
   PriKey,
   validatePK
 } from "@fjell/core";
-import { Instance, NotFoundError } from "@fjell/lib";
+import { NotFoundError } from "@fjell/lib";
+import { Instance } from "./Instance";
 import deepmerge from "deepmerge";
 import { Request, Response, Router } from "express";
 import LibLogger from "./logger";
