@@ -5,6 +5,7 @@ import { createInstance, isInstance } from '@/Instance';
 import { ItemRouter } from '@/ItemRouter';
 import { Item } from '@fjell/core';
 import { Coordinate, Registry } from '@fjell/registry';
+import { Operations, Options } from '@fjell/lib';
 
 // Mock the logger
 vi.mock('@fjell/logging', () => ({
@@ -50,6 +51,8 @@ describe('Instance', () => {
   let mockRegistry: Registry;
   let mockCoordinate: Coordinate<"test", "container">;
   let mockRouter: ItemRouter<"test", "container">;
+  let mockOperations: Operations<TestItem, "test", "container">;
+  let mockOptions: Options<TestItem, "test", "container">;
 
   beforeEach(() => {
     mockRegistry = {
@@ -57,7 +60,9 @@ describe('Instance', () => {
       createInstance: vi.fn(),
       register: vi.fn(),
       get: vi.fn(),
-      instanceTree: {}
+      instanceTree: {},
+      getCoordinates: vi.fn().mockReturnValue([]),
+      getStatistics: vi.fn().mockReturnValue({ totalCalls: 0, coordinateCalls: {} })
     } as Registry;
 
     mockCoordinate = {
@@ -69,27 +74,67 @@ describe('Instance', () => {
       {} as any,
       'test'
     ) as ItemRouter<"test", "container">;
+
+    mockOperations = {
+      all: vi.fn(),
+      find: vi.fn(),
+      get: vi.fn(),
+      one: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
+      upsert: vi.fn(),
+      remove: vi.fn(),
+      findOne: vi.fn(),
+      finders: {},
+      action: vi.fn(),
+      actions: {},
+      facet: vi.fn(),
+      facets: {},
+      allAction: vi.fn(),
+      allActions: {},
+      allFacet: vi.fn(),
+      allFacets: {}
+    } as unknown as Operations<TestItem, "test", "container">;
+
+    mockOptions = {
+      hooks: {},
+      validators: {},
+      finders: {},
+      actions: {},
+      allActions: {},
+      facets: {},
+      allFacets: {}
+    } as Options<TestItem, "test", "container">;
+
+    // Clear all mocks before each test
+    vi.clearAllMocks();
   });
 
   describe('createInstance', () => {
-    it('should create an instance with registry, coordinate, and router', () => {
+    it('should create an instance with registry, coordinate, router, operations, and options', () => {
       const instance = createInstance<TestItem, "test", "container">(
         mockRegistry,
         mockCoordinate,
-        mockRouter
+        mockRouter,
+        mockOperations,
+        mockOptions
       );
 
       expect(instance).toBeDefined();
       expect(instance.registry).toBe(mockRegistry);
       expect(instance.coordinate).toBe(mockCoordinate);
       expect(instance.router).toBe(mockRouter);
+      expect(instance.operations).toBe(mockOperations);
+      expect(instance.options).toBe(mockOptions);
     });
 
     it('should include itemType property as not defined by default', () => {
       const instance = createInstance<TestItem, "test", "container">(
         mockRegistry,
         mockCoordinate,
-        mockRouter
+        mockRouter,
+        mockOperations,
+        mockOptions
       );
 
       expect(instance.itemType).not.toBeDefined();
@@ -102,7 +147,9 @@ describe('Instance', () => {
       createInstance<TestItem, "test", "container">(
         mockRegistry,
         mockCoordinate,
-        mockRouter
+        mockRouter,
+        mockOperations,
+        mockOptions
       );
 
       expect(mockCreateInstance).toHaveBeenCalledWith(mockRegistry, mockCoordinate);
@@ -114,7 +161,9 @@ describe('Instance', () => {
       const validInstance = {
         registry: mockRegistry,
         coordinate: mockCoordinate,
-        router: mockRouter
+        router: mockRouter,
+        operations: mockOperations,
+        options: mockOptions
       };
 
       expect(isInstance(validInstance)).toBe(true);

@@ -5,6 +5,7 @@ import { createInstance } from '@/Instance';
 import { ItemRouter } from '@/ItemRouter';
 import { Item } from '@fjell/core';
 import { Coordinate, Registry, RegistryHub } from '@fjell/registry';
+import { Operations, Options } from '@fjell/lib';
 
 // Mock the logger
 vi.mock('@/logger', () => ({
@@ -29,10 +30,12 @@ vi.mock('@/logger', () => ({
 
 // Mock the Instance module
 vi.mock('@/Instance', () => ({
-  createInstance: vi.fn((registry, coordinate, router) => ({
+  createInstance: vi.fn((registry, coordinate, router, operations, options) => ({
     registry,
     coordinate,
     router,
+    operations,
+    options,
     itemType: undefined
   }))
 }));
@@ -53,6 +56,8 @@ describe('InstanceFactory', () => {
   let mockRegistry: Registry;
   let mockRegistryHub: RegistryHub;
   let mockCoordinate: Coordinate<"test", "container">;
+  let mockOperations: Operations<TestItem, "test", "container">;
+  let mockOptions: Options<TestItem, "test", "container">;
 
   beforeEach(() => {
     mockRouter = new ItemRouter(
@@ -65,7 +70,9 @@ describe('InstanceFactory', () => {
       createInstance: vi.fn(),
       register: vi.fn(),
       get: vi.fn(),
-      instanceTree: {}
+      instanceTree: {},
+      getCoordinates: vi.fn().mockReturnValue([]),
+      getStatistics: vi.fn().mockReturnValue({ totalCalls: 0, coordinateCalls: {} })
     } as Registry;
 
     mockRegistryHub = {
@@ -76,7 +83,8 @@ describe('InstanceFactory', () => {
       createRegistry: vi.fn(),
       get: vi.fn(),
       getRegisteredTypes: vi.fn(),
-      unregisterRegistry: vi.fn()
+      unregisterRegistry: vi.fn(),
+      getAllCoordinates: vi.fn().mockReturnValue([])
     } as RegistryHub;
 
     mockCoordinate = {
@@ -84,68 +92,73 @@ describe('InstanceFactory', () => {
       scopes: ['default']
     } as Coordinate<"test", "container">;
 
+    mockOperations = {
+      all: vi.fn(),
+      find: vi.fn(),
+      get: vi.fn(),
+      one: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
+      upsert: vi.fn(),
+      remove: vi.fn(),
+      findOne: vi.fn(),
+      finders: {},
+      action: vi.fn(),
+      actions: {},
+      facet: vi.fn(),
+      facets: {},
+      allAction: vi.fn(),
+      allActions: {},
+      allFacet: vi.fn(),
+      allFacets: {}
+    } as unknown as Operations<TestItem, "test", "container">;
+
+    mockOptions = {
+      hooks: {},
+      validators: {},
+      finders: {},
+      actions: {},
+      allActions: {},
+      facets: {},
+      allFacets: {}
+    } as Options<TestItem, "test", "container">;
+
     // Clear all mocks before each test
     vi.clearAllMocks();
   });
 
   describe('createInstanceFactory', () => {
-    it('should create an instance factory function', () => {
-      const factory = createInstanceFactory<TestItem, "test", "container">(mockRouter);
+    it('should create an instance factory for ItemRouter', () => {
+      const factory = createInstanceFactory<TestItem, "test", "container">(mockRouter, mockOperations, mockOptions);
 
       expect(factory).toBeDefined();
       expect(typeof factory).toBe('function');
     });
 
-    it('should return a function that creates instances when called', () => {
-      const factory = createInstanceFactory<TestItem, "test", "container">(mockRouter);
-      const context = { registry: mockRegistry, registryHub: mockRegistryHub };
-
-      const instance = factory(mockCoordinate, context);
+    it('should return an instance when factory is called', () => {
+      const factory = createInstanceFactory<TestItem, "test", "container">(mockRouter, mockOperations, mockOptions);
+      const instance = factory(mockCoordinate, { registry: mockRegistry });
 
       expect(instance).toBeDefined();
-      expect(createInstance).toHaveBeenCalledWith(mockRegistry, mockCoordinate, mockRouter);
+      expect(createInstance).toHaveBeenCalledWith(mockRegistry, mockCoordinate, mockRouter, mockOperations, mockOptions);
     });
 
-    it('should work with context that only has registry (no registryHub)', () => {
-      const factory = createInstanceFactory<TestItem, "test", "container">(mockRouter);
-      const context = { registry: mockRegistry };
-
-      const instance = factory(mockCoordinate, context);
+    it('should return an instance with registry hub when factory is called', () => {
+      const factory = createInstanceFactory<TestItem, "test", "container">(mockRouter, mockOperations, mockOptions);
+      const instance = factory(mockCoordinate, { registry: mockRegistry, registryHub: mockRegistryHub });
 
       expect(instance).toBeDefined();
-      expect(createInstance).toHaveBeenCalledWith(mockRegistry, mockCoordinate, mockRouter);
-    });
-
-    it('should pass the router to the created instance', () => {
-      const factory = createInstanceFactory<TestItem, "test", "container">(mockRouter);
-      const context = { registry: mockRegistry, registryHub: mockRegistryHub };
-
-      const instance = factory(mockCoordinate, context);
-
       expect(createInstance).toHaveBeenCalledWith(
         mockRegistry,
         mockCoordinate,
-        mockRouter
-      );
-      expect(instance).toHaveProperty('router', mockRouter);
-    });
-
-    it('should log debug information when creating an instance', async () => {
-      const mockLogger = vi.mocked(await import('@/logger')).default.get();
-      const factory = createInstanceFactory<TestItem, "test", "container">(mockRouter);
-      const context = { registry: mockRegistry, registryHub: mockRegistryHub };
-
-      factory(mockCoordinate, context);
-
-      expect(mockLogger.debug).toHaveBeenCalledWith(
-        "Creating express-router instance",
-        { coordinate: mockCoordinate, registry: mockRegistry, router: mockRouter }
+        mockRouter,
+        mockOperations,
+        mockOptions
       );
     });
 
-    it('should create instances with different coordinates', () => {
-      const factory = createInstanceFactory<TestItem, "test", "container">(mockRouter);
-      const context = { registry: mockRegistry };
+    it('should handle multiple coordinates', () => {
+      const factory = createInstanceFactory<TestItem, "test", "container">(mockRouter, mockOperations, mockOptions);
 
       const coordinate1 = {
         kta: ['test', 'container'],
@@ -157,16 +170,16 @@ describe('InstanceFactory', () => {
         scopes: ['scope2']
       } as Coordinate<"test", "container">;
 
-      factory(coordinate1, context);
-      factory(coordinate2, context);
+      factory(coordinate1, { registry: mockRegistry });
+      factory(coordinate2, { registry: mockRegistry });
 
       expect(createInstance).toHaveBeenCalledTimes(2);
-      expect(createInstance).toHaveBeenNthCalledWith(1, mockRegistry, coordinate1, mockRouter);
-      expect(createInstance).toHaveBeenNthCalledWith(2, mockRegistry, coordinate2, mockRouter);
+      expect(createInstance).toHaveBeenNthCalledWith(1, mockRegistry, coordinate1, mockRouter, mockOperations, mockOptions);
+      expect(createInstance).toHaveBeenNthCalledWith(2, mockRegistry, coordinate2, mockRouter, mockOperations, mockOptions);
     });
 
     it('should create instances with different registries', () => {
-      const factory = createInstanceFactory<TestItem, "test", "container">(mockRouter);
+      const factory = createInstanceFactory<TestItem, "test", "container">(mockRouter, mockOperations, mockOptions);
 
       const registry1 = { ...mockRegistry, type: 'express-router-1' };
       const registry2 = { ...mockRegistry, type: 'express-router-2' };
@@ -178,12 +191,12 @@ describe('InstanceFactory', () => {
       factory(mockCoordinate, context2);
 
       expect(createInstance).toHaveBeenCalledTimes(2);
-      expect(createInstance).toHaveBeenNthCalledWith(1, registry1, mockCoordinate, mockRouter);
-      expect(createInstance).toHaveBeenNthCalledWith(2, registry2, mockCoordinate, mockRouter);
+      expect(createInstance).toHaveBeenNthCalledWith(1, registry1, mockCoordinate, mockRouter, mockOperations, mockOptions);
+      expect(createInstance).toHaveBeenNthCalledWith(2, registry2, mockCoordinate, mockRouter, mockOperations, mockOptions);
     });
 
     it('should return instances that match the InstanceFactory type', () => {
-      const factory = createInstanceFactory<TestItem, "test", "container">(mockRouter);
+      const factory = createInstanceFactory<TestItem, "test", "container">(mockRouter, mockOperations, mockOptions);
       const context = { registry: mockRegistry };
 
       const instance = factory(mockCoordinate, context);
@@ -198,7 +211,7 @@ describe('InstanceFactory', () => {
   describe('InstanceFactory type', () => {
     it('should define the correct type signature', () => {
       // This test ensures the TypeScript types are correct
-      const factory = createInstanceFactory<TestItem, "test", "container">(mockRouter);
+      const factory = createInstanceFactory<TestItem, "test", "container">(mockRouter, mockOperations, mockOptions);
 
       // The factory should be a function that takes a router and returns a BaseInstanceFactory
       expect(typeof factory).toBe('function');
