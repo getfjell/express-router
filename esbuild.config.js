@@ -33,6 +33,14 @@ await build({
   sourcemap: true,
   minify: false,
   preserveSymlinks: false,
+  external: [
+    '@fjell/core',
+    '@fjell/lib',
+    '@fjell/logging',
+    '@fjell/registry',
+    'deepmerge',
+    'express'
+  ],
   outExtension: {
     '.js': '.js'
   },
