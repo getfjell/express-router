@@ -11,18 +11,17 @@
   "engines": {
     "node": ">=21"
   },
-  "main": "dist/index.cjs",
+  "main": "dist/index.js",
   "module": "dist/index.js",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
+      "import": "./dist/index.js"
     }
   },
   "type": "module",
   "scripts": {
-    "build": "tsc --noEmit && vite build",
+    "build": "pnpm run clean && tsc && node esbuild.config.js",
     "dev": "nodemon --watch src --ext ts --exec 'pnpm build'",
     "lint": "eslint . --ext .ts --fix",
     "clean": "rimraf dist",
@@ -46,20 +45,17 @@
     "@eslint/eslintrc": "^3.3.1",
     "@eslint/js": "^9.31.0",
     "@fjell/eslint-config": "^1.0.5",
-    "@swc/core": "^1.13.2",
     "@tsconfig/recommended": "^1.0.10",
     "@types/express": "^5.0.3",
     "@types/node": "^24.1.0",
     "@typescript-eslint/eslint-plugin": "^8.38.0",
     "@typescript-eslint/parser": "^8.38.0",
     "@vitest/coverage-v8": "^3.2.4",
+    "esbuild": "^0.24.0",
     "eslint": "^9.31.0",
     "nodemon": "^3.1.10",
     "rimraf": "^6.0.1",
     "typescript": "^5.8.3",
-    "vite": "^7.0.5",
-    "vite-plugin-dts": "^4.5.4",
-    "vite-plugin-node": "^7.0.0",
     "vitest": "^3.2.4"
   },
   "packageManager": "pnpm@10.13.1",
