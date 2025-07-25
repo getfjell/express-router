@@ -1,10 +1,12 @@
+import { createDocsViteConfig } from '@fjell/docs-template/config'
 import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
 
-// https://vitejs.dev/config/
+const baseConfig = createDocsViteConfig({
+  basePath: '/express-router/'
+})
+
 export default defineConfig({
-  plugins: [react()],
-  base: '/express-router/',
+  ...baseConfig,
   test: {
     globals: true,
     environment: 'jsdom',

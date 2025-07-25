@@ -10,16 +10,18 @@
       ]
     },
     "declaration": true,
+    "declarationMap": true,
+    "emitDeclarationOnly": true,
     "target": "es2022",
     "module": "es2022",
     "moduleResolution": "bundler"
   },
   "include": [
-    "./src/**/*.ts",
-    "./tests/**/*.ts"
+    "./src/**/*.ts"
   ],
   "exclude": [
     "node_modules",
-    "metro.config.js"
+    "tests",
+    "dist"
   ]
 }
