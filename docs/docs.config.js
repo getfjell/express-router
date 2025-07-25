@@ -23,6 +23,16 @@ const config = {
       file: '/examples-README.md'
     }
   ],
+  filesToCopy: [
+    {
+      source: '../README.md',
+      destination: 'public/README.md'
+    },
+    {
+      source: '../examples/README.md',
+      destination: 'public/examples-README.md'
+    }
+  ],
   plugins: [],
   version: {
     source: 'package.json'
