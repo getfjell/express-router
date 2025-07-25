@@ -1,0 +1,15 @@
+name: 'Build Documentation'
+description: 'Build the Vite documentation site with all required assets'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Build documentation site
+      shell: bash
+      run: |
+        # Change to docs directory and install dependencies
+        cd docs
+        # Clean install to fix npm optional dependencies bug (https://github.com/npm/cli/issues/4828)
+        rm -rf node_modules package-lock.json
+        npm install
+        npm run build
