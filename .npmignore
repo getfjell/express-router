@@ -18,11 +18,9 @@ yarn.lock
 .vscode/
 .yarn/
 vite.config.ts
-pnpm-lock.yaml
-pnpm-workspace.yaml
+
 eslint.config.mjs
 .kodrdriv/
 src/
 commit.sh
 release.sh
-pnpm-workspace.yaml.bak
