@@ -20,10 +20,10 @@ Fjell Express Router provides a powerful abstraction layer for creating Express.
 npm install @fjell/express-router
 ```
 
-Or with pnpm:
+Or with npm:
 
 ```bash
-pnpm add @fjell/express-router
+npm install @fjell/express-router
 ```
 
 ## Quick Start
