@@ -1,6 +1,6 @@
 {
   "name": "@fjell/express-router",
-  "version": "4.4.19",
+  "version": "4.4.20",
   "license": "Apache-2.0",
   "keywords": [
     "express",
@@ -24,7 +24,7 @@
     "build": "npm run clean && node build.js",
     "dev": "nodemon --watch src --ext ts --exec 'npm run build'",
     "lint": "eslint . --ext .ts --fix",
-    "clean": "rimraf dist",
+    "clean": "rm -rf dist",
     "test": "npm run lint && vitest run --coverage",
     "prepublishOnly": "npm run clean && npm run build",
     "docs:dev": "cd docs && npm run dev",
@@ -54,7 +54,6 @@
     "esbuild": "^0.25.8",
     "eslint": "^9.32.0",
     "nodemon": "^3.1.10",
-    "rimraf": "^6.0.1",
     "typescript": "^5.8.3",
     "vitest": "^3.2.4"
   },
