@@ -22,7 +22,7 @@ const mockLogger = {
   get: vi.fn(() => mockLogger), // For nested logger.get(req.path) calls
 };
 
-vi.mock('@/logger', () => ({
+vi.mock('../src/logger', () => ({
   default: {
     get: vi.fn(() => mockLogger),
     ...mockLoggerMethods,

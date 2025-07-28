@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import LibLogger from '@/logger';
+import LibLogger from '../src/logger';
 
 // Mock @fjell/logging
 const mockLogger = {
@@ -25,7 +25,7 @@ vi.mock('@fjell/logging', () => ({
 }));
 
 // Import after mocking
-import '@/logger';
+import '../src/logger';
 
 describe('logger', () => {
   it('should export a logger instance', () => {

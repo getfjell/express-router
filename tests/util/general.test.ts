@@ -1,6 +1,6 @@
 /* eslint-disable no-undefined */
 import { describe, expect, it } from 'vitest';
-import { clean, stringifyJSON } from '@/util/general';
+import { clean, stringifyJSON } from '../../src/util/general';
 
 describe('general utilities', () => {
   describe('clean', () => {

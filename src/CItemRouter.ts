@@ -2,7 +2,7 @@ import {
   ComKey, Item, ItemQuery, LocKey, LocKeyArray, paramsToQuery, PriKey, QueryParams, validatePK
 } from "@fjell/core";
 import { Request, Response } from "express";
-import { ItemRouter, ItemRouterOptions } from "@/ItemRouter";
+import { ItemRouter, ItemRouterOptions } from "./ItemRouter";
 import { Instance } from "./Instance";
 
 interface ParsedQuery {

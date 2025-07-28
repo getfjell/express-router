@@ -1,5 +1,5 @@
 import { Item, ItemQuery, paramsToQuery, PriKey, QueryParams, validatePK } from "@fjell/core";
-import { ItemRouter, ItemRouterOptions } from "@/ItemRouter";
+import { ItemRouter, ItemRouterOptions } from "./ItemRouter";
 import { Instance } from "./Instance";
 import { Request, Response } from "express";
 
