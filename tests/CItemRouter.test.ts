@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { CItemRouter } from "@/CItemRouter";
+import { CItemRouter } from "../src/CItemRouter";
 import { ComKey, Item, LocKeyArray, PriKey, UUID } from "@fjell/core";
 import { Request, Response } from "express";
 import { beforeEach, describe, expect, it, vi } from 'vitest';
