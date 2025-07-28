@@ -1,10 +1,10 @@
 import { Item } from "@fjell/core";
-import { ItemRouter } from "./ItemRouter";
+import { ItemRouter } from "./ItemRouter.js";
 import { InstanceFactory as BaseInstanceFactory, Registry, RegistryHub } from "@fjell/registry";
 import { Operations, Options } from "@fjell/lib";
-import { createInstance, Instance } from "./Instance";
+import { createInstance, Instance } from "./Instance.js";
 import { Coordinate } from "@fjell/registry";
-import LibLogger from "./logger";
+import LibLogger from "./logger.js";
 
 const logger = LibLogger.get("InstanceFactory");
 
@@ -34,10 +34,10 @@ export const createInstanceFactory = <
   L4 extends string = never,
   L5 extends string = never
 >(
-    router: ItemRouter<S, L1, L2, L3, L4, L5>,
-    operations: Operations<V, S, L1, L2, L3, L4, L5>,
-    options?: Options<V, S, L1, L2, L3, L4, L5>
-  ): BaseInstanceFactory<S, L1, L2, L3, L4, L5> => {
+  router: ItemRouter<S, L1, L2, L3, L4, L5>,
+  operations: Operations<V, S, L1, L2, L3, L4, L5>,
+  options?: Options<V, S, L1, L2, L3, L4, L5>
+): BaseInstanceFactory<S, L1, L2, L3, L4, L5> => {
   return (coordinate: Coordinate<S, L1, L2, L3, L4, L5>, context: { registry: Registry, registryHub?: RegistryHub }) => {
     logger.debug("Creating express-router instance", { coordinate, registry: context.registry, router, operations, options });
 
