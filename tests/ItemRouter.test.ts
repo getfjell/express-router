@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars, no-undefined */
-import { ItemRouter } from "@/ItemRouter";
+import { ItemRouter } from "../src/ItemRouter";
 import { ComKey, Item, LocKey, LocKeyArray, PriKey, UUID } from "@fjell/core";
 import { NotFoundError } from "@fjell/lib";
 import { Request, Response, Router } from "express";

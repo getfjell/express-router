@@ -1,10 +1,10 @@
 /* eslint-disable no-undefined */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { createRegistry, createRegistryFactory, Registry } from '@/Registry';
+import { createRegistry, createRegistryFactory, Registry } from '../src/Registry';
 import { RegistryHub } from '@fjell/registry';
 
 // Mock the logger
-vi.mock('@/logger', () => ({
+vi.mock('../src/logger', () => ({
   default: {
     get: vi.fn().mockReturnValue({
       debug: vi.fn(),
@@ -140,7 +140,7 @@ describe('Registry', () => {
     });
 
     it('should log debug information when creating registry', async () => {
-      const mockLogger = vi.mocked(await import('@/logger')).default.get();
+      const mockLogger = vi.mocked(await import('../src/logger')).default.get();
       const factory = createRegistryFactory();
 
       factory('express-router', mockRegistryHub);

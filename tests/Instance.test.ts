@@ -1,8 +1,8 @@
 
 /* eslint-disable no-undefined */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { createInstance, isInstance } from '@/Instance';
-import { ItemRouter } from '@/ItemRouter';
+import { createInstance, isInstance } from '../src/Instance';
+import { ItemRouter } from '../src/ItemRouter';
 import { Item } from '@fjell/core';
 import { Coordinate, Registry } from '@fjell/registry';
 import { Operations, Options } from '@fjell/lib';
@@ -37,7 +37,7 @@ vi.mock('@fjell/registry', () => ({
 }));
 
 // Mock ItemRouter
-vi.mock('@/ItemRouter', () => ({
+vi.mock('../src/ItemRouter', () => ({
   ItemRouter: vi.fn().mockImplementation(() => ({
     getPkType: () => 'test',
     configure: vi.fn(),

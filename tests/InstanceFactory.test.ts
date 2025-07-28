@@ -1,14 +1,14 @@
 /* eslint-disable no-undefined */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { createInstanceFactory } from '@/InstanceFactory';
-import { createInstance } from '@/Instance';
-import { ItemRouter } from '@/ItemRouter';
+import { createInstanceFactory } from '../src/InstanceFactory';
+import { createInstance } from '../src/Instance';
+import { ItemRouter } from '../src/ItemRouter';
 import { Item } from '@fjell/core';
 import { Coordinate, Registry, RegistryHub } from '@fjell/registry';
 import { Operations, Options } from '@fjell/lib';
 
 // Mock the logger
-vi.mock('@/logger', () => ({
+vi.mock('../src/logger', () => ({
   default: {
     get: vi.fn().mockReturnValue({
       debug: vi.fn(),
@@ -29,7 +29,7 @@ vi.mock('@/logger', () => ({
 }));
 
 // Mock the Instance module
-vi.mock('@/Instance', () => ({
+vi.mock('../src/Instance', () => ({
   createInstance: vi.fn((registry, coordinate, router, operations, options) => ({
     registry,
     coordinate,
@@ -41,7 +41,7 @@ vi.mock('@/Instance', () => ({
 }));
 
 // Mock ItemRouter
-vi.mock('@/ItemRouter', () => ({
+vi.mock('../src/ItemRouter', () => ({
   ItemRouter: vi.fn().mockImplementation(() => ({
     getPkType: () => 'test',
     configure: vi.fn(),
