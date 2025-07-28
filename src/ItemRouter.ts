@@ -9,10 +9,10 @@ import {
   validatePK
 } from "@fjell/core";
 import { NotFoundError } from "@fjell/lib";
-import { Instance } from "./Instance";
+import { Instance } from "./Instance.js";
 import deepmerge from "deepmerge";
 import { Request, Response, Router } from "express";
-import LibLogger from "./logger";
+import LibLogger from "./logger.js";
 
 export type ItemRouterOptions = Record<string, never>;
 
