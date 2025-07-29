@@ -14,6 +14,80 @@ import deepmerge from "deepmerge";
 import { Request, Response, Router } from "express";
 import LibLogger from "./logger.js";
 
+/**
+ * Router-level action method signature - aligned with library ActionMethod pattern
+ * Takes the resolved item key, action parameters, and HTTP context
+ */
+export interface RouterActionMethod<
+  S extends string,
+  L1 extends string = never,
+  L2 extends string = never,
+  L3 extends string = never,
+  L4 extends string = never,
+  L5 extends string = never,
+> {
+  (
+    ik: PriKey<S> | ComKey<S, L1, L2, L3, L4, L5>,
+    actionParams: Record<string, string | number | boolean | Date | Array<string | number | boolean | Date>>,
+    context: { req: Request, res: Response }
+  ): Promise<any>;
+}
+
+/**
+ * Router-level facet method signature - aligned with library FacetMethod pattern
+ * Takes the resolved item key, facet parameters, and HTTP context
+ */
+export interface RouterFacetMethod<
+  S extends string,
+  L1 extends string = never,
+  L2 extends string = never,
+  L3 extends string = never,
+  L4 extends string = never,
+  L5 extends string = never,
+> {
+  (
+    ik: PriKey<S> | ComKey<S, L1, L2, L3, L4, L5>,
+    facetParams: Record<string, string | number | boolean | Date | Array<string | number | boolean | Date>>,
+    context: { req: Request, res: Response }
+  ): Promise<any>;
+}
+
+/**
+ * Router-level all action method signature - aligned with library AllActionMethod pattern
+ * Takes action parameters, optional locations, and HTTP context
+ */
+export interface RouterAllActionMethod<
+  L1 extends string = never,
+  L2 extends string = never,
+  L3 extends string = never,
+  L4 extends string = never,
+  L5 extends string = never,
+> {
+  (
+    allActionParams: Record<string, string | number | boolean | Date | Array<string | number | boolean | Date>>,
+    locations: LocKeyArray<L1, L2, L3, L4, L5> | [],
+    context: { req: Request, res: Response }
+  ): Promise<any>;
+}
+
+/**
+ * Router-level all facet method signature - aligned with library AllFacetMethod pattern
+ * Takes facet parameters, optional locations, and HTTP context
+ */
+export interface RouterAllFacetMethod<
+  L1 extends string = never,
+  L2 extends string = never,
+  L3 extends string = never,
+  L4 extends string = never,
+  L5 extends string = never,
+> {
+  (
+    allFacetParams: Record<string, string | number | boolean | Date | Array<string | number | boolean | Date>>,
+    locations: LocKeyArray<L1, L2, L3, L4, L5> | [],
+    context: { req: Request, res: Response }
+  ): Promise<any>;
+}
+
 export type ItemRouterOptions<
   S extends string = string,
   L1 extends string = never,
@@ -22,14 +96,29 @@ export type ItemRouterOptions<
   L4 extends string = never,
   L5 extends string = never
 > = {
-  /** Handlers for item actions */
-  actions?: Record<string, (req: Request, res: Response, ik: PriKey<S> | ComKey<S, L1, L2, L3, L4, L5>) => Promise<void>>;
-  /** Handlers for item facets */
-  facets?: Record<string, (req: Request, res: Response, ik: PriKey<S> | ComKey<S, L1, L2, L3, L4, L5>) => Promise<void>>;
-  /** Handlers for all actions */
-  allActions?: Record<string, (req: Request, res: Response) => Promise<void>>;
-  /** Handlers for all facets */
-  allFacets?: Record<string, (req: Request, res: Response) => Promise<void>>;
+  /**
+   * Handlers for item actions - aligned with library operation signatures
+   * The key in the Record is the action name, method receives resolved item key and parameters
+   */
+  actions?: Record<string, RouterActionMethod<S, L1, L2, L3, L4, L5>>;
+
+  /**
+   * Handlers for item facets - aligned with library operation signatures
+   * The key in the Record is the facet name, method receives resolved item key and parameters
+   */
+  facets?: Record<string, RouterFacetMethod<S, L1, L2, L3, L4, L5>>;
+
+  /**
+   * Handlers for all actions - aligned with library operation signatures
+   * The key in the Record is the action name, method receives parameters and optional locations
+   */
+  allActions?: Record<string, RouterAllActionMethod<L1, L2, L3, L4, L5>>;
+
+  /**
+   * Handlers for all facets - aligned with library operation signatures
+   * The key in the Record is the facet name, method receives parameters and optional locations
+   */
+  allFacets?: Record<string, RouterAllFacetMethod<L1, L2, L3, L4, L5>>;
 };
 
 export class ItemRouter<
@@ -101,7 +190,12 @@ export class ItemRouter<
     if (this.options.allActions && this.options.allActions[allActionKey]) {
       this.logger.debug('Using router-level all action handler', { allActionKey });
       try {
-        await this.options.allActions[allActionKey](req, res);
+        const result = await this.options.allActions[allActionKey](
+          req.body as Record<string, string | number | boolean | Date | Array<string | number | boolean | Date>>,
+          this.getLKA(res) as LocKeyArray<L1, L2, L3, L4, L5> | [],
+          { req, res }
+        );
+        if (result != null) res.json(result);
         return;
       } catch (err: any) {
         this.logger.error('Error in router-level all action', { message: err?.message, stack: err?.stack });
@@ -140,7 +234,12 @@ export class ItemRouter<
     if (this.options.allFacets && this.options.allFacets[facetKey]) {
       this.logger.debug('Using router-level all facet handler', { facetKey });
       try {
-        await this.options.allFacets[facetKey](req, res);
+        const result = await this.options.allFacets[facetKey](
+          req.query as Record<string, string | number | boolean | Date | Array<string | number | boolean | Date>>,
+          this.getLKA(res) as LocKeyArray<L1, L2, L3, L4, L5> | [],
+          { req, res }
+        );
+        if (result != null) res.json(result);
         return;
       } catch (err: any) {
         this.logger.error('Error in router-level all facet', { message: err?.message, stack: err?.stack });
@@ -181,7 +280,12 @@ export class ItemRouter<
     if (this.options.actions && this.options.actions[actionKey]) {
       this.logger.debug('Using router-level action handler', { actionKey });
       try {
-        await this.options.actions[actionKey](req, res, ik);
+        const result = await this.options.actions[actionKey](
+          ik,
+          req.body as Record<string, string | number | boolean | Date | Array<string | number | boolean | Date>>,
+          { req, res }
+        );
+        if (result != null) res.json(result);
         return;
       } catch (err: any) {
         this.logger.error('Error in router-level action', { message: err?.message, stack: err?.stack });
@@ -221,7 +325,12 @@ export class ItemRouter<
     if (this.options.facets && this.options.facets[facetKey]) {
       this.logger.debug('Using router-level facet handler', { facetKey });
       try {
-        await this.options.facets[facetKey](req, res, ik);
+        const result = await this.options.facets[facetKey](
+          ik,
+          req.query as Record<string, string | number | boolean | Date | Array<string | number | boolean | Date>>,
+          { req, res }
+        );
+        if (result != null) res.json(result);
         return;
       } catch (err: any) {
         this.logger.error('Error in router-level facet', { message: err?.message, stack: err?.stack });
