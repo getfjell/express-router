@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { CItemRouter, createRegistry, PItemRouter } from '../src';
 import { ComKey, Item, PriKey } from '@fjell/core';
 import express from 'express';

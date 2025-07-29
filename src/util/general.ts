@@ -1,5 +1,5 @@
- 
-/* eslint-disable no-undefined */
+
+/* eslint-disable no-undefined, @typescript-eslint/no-unused-vars */
 export const clean = (obj: any) => {
   return Object.fromEntries(
     Object.entries(obj).filter(([_, v]) => v !== undefined)
