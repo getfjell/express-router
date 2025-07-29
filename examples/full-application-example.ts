@@ -12,7 +12,7 @@
  */
 
 import express, { Application, NextFunction, Request, Response } from 'express';
-import { ComKey, Item, PriKey, UUID } from '@fjell/core';
+import { ComKey, Item, LocKey, PriKey, UUID } from '@fjell/core';
 import { CItemRouter, createRegistry, PItemRouter } from '../src';
 
 // ===== Data Models =====
@@ -280,12 +280,23 @@ const createCustomerOperations = () => ({
   async update(key: PriKey<'customer'>, updates: Partial<Customer>) {
     const existing = mockCustomerStorage.get(String(key.pk));
     if (!existing) throw new Error(`Customer not found: ${key.pk}`);
-    const updated = { ...existing, ...updates };
+    const updated = {
+      ...existing,
+      ...updates,
+      key: existing.key, // Preserve the key
+      events: {
+        ...existing.events,
+        updated: { at: new Date() }
+      }
+    };
     mockCustomerStorage.set(String(key.pk), updated);
     return updated;
   },
   async remove(key: PriKey<'customer'>) {
-    return mockCustomerStorage.delete(String(key.pk));
+    const customer = mockCustomerStorage.get(String(key.pk));
+    if (!customer) throw new Error(`Customer not found: ${key.pk}`);
+    mockCustomerStorage.delete(String(key.pk));
+    return customer;
   },
   async find(finder: string, params: any) {
     const customers = Array.from(mockCustomerStorage.values());
@@ -318,12 +329,23 @@ const createProductOperations = () => ({
   async update(key: PriKey<'product'>, updates: Partial<Product>) {
     const existing = mockProductStorage.get(String(key.pk));
     if (!existing) throw new Error(`Product not found: ${key.pk}`);
-    const updated = { ...existing, ...updates };
+    const updated = {
+      ...existing,
+      ...updates,
+      key: existing.key, // Preserve the key
+      events: {
+        ...existing.events,
+        updated: { at: new Date() }
+      }
+    };
     mockProductStorage.set(String(key.pk), updated);
     return updated;
   },
   async remove(key: PriKey<'product'>) {
-    return mockProductStorage.delete(String(key.pk));
+    const product = mockProductStorage.get(String(key.pk));
+    if (!product) throw new Error(`Product not found: ${key.pk}`);
+    mockProductStorage.delete(String(key.pk));
+    return product;
   },
   async find(finder: string, params: any) {
     const products = Array.from(mockProductStorage.values());
@@ -344,25 +366,54 @@ const createOrderOperations = () => ({
     if (!order) throw new Error(`Order not found: ${key.pk}`);
     return order;
   },
-  async create(item: Order) {
+  async create(item: Order, options?: { locations?: any[] }) {
+    console.log('Order create called with:', { item, options });
     const id = `order-${Date.now()}`;
+    // Extract customerId from locations (passed from URL params) or item data
+    const customerId = options?.locations?.[0]?.lk || item.customerId;
+    console.log('Extracted customerId:', customerId);
+    if (!customerId) {
+      throw new Error('CustomerId is required for order creation');
+    }
     const newOrder: Order = {
       ...item,
       id,
-      key: { kt: 'order', pk: id as UUID, loc: (item.key as any)?.loc || [] },
+      customerId,
+      orderDate: item.orderDate ? new Date(item.orderDate) : new Date(),
+      key: {
+        kt: 'order',
+        pk: id as UUID,
+        loc: [{ kt: 'customer', lk: customerId }]
+      },
       events: { created: { at: new Date() }, updated: { at: new Date() }, deleted: { at: null } }
     };
+    console.log('Created order:', newOrder);
     mockOrderStorage.set(id, newOrder);
     return newOrder;
   },
   async update(key: ComKey<'order', 'customer'>, updates: Partial<Order>) {
     const existing = mockOrderStorage.get(String(key.pk));
     if (!existing) throw new Error(`Order not found: ${key.pk}`);
-    const updated = { ...existing, ...updates };
+    const updated = {
+      ...existing,
+      ...updates,
+      // Ensure orderDate is a Date object if it's being updated
+      ...(updates.orderDate && { orderDate: new Date(updates.orderDate) }),
+      key: existing.key, // Preserve the key
+      events: {
+        ...existing.events,
+        updated: { at: new Date() }
+      }
+    };
     mockOrderStorage.set(String(key.pk), updated);
     return updated;
   },
-  async remove(key: ComKey<'order', 'customer'>) { return mockOrderStorage.delete(String(key.pk)); },
+  async remove(key: ComKey<'order', 'customer'>) {
+    const order = mockOrderStorage.get(String(key.pk));
+    if (!order) throw new Error(`Order not found: ${key.pk}`);
+    mockOrderStorage.delete(String(key.pk));
+    return order;
+  },
   async find(finder: string, params: any) {
     const orders = Array.from(mockOrderStorage.values());
     switch (finder) {
@@ -376,6 +427,7 @@ const createOrderOperations = () => ({
 // ===== Middleware =====
 const errorHandler = (err: Error, req: Request, res: Response, next: NextFunction) => {
   console.error('❌ Application Error:', err.message);
+  console.error('❌ Stack trace:', err.stack);
   res.status(500).json({
     error: 'Internal Server Error',
     message: process.env.NODE_ENV === 'development' ? err.message : 'Something went wrong'
@@ -425,6 +477,36 @@ export const runFullApplicationExample = async (): Promise<{ app: Application }>
   app.use(requestLogger);
   app.use(validateCustomerTier);
 
+  // JSON parsing error handler
+  app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+    if (err instanceof SyntaxError && 'body' in err) {
+      return res.status(400).json({ error: 'Invalid JSON' });
+    }
+    next(err);
+  });
+
+  // Validation middleware for customer creation only (not nested routes)
+  app.use('/api/customers', (req, res, next) => {
+    // Only validate for direct customer creation, not nested routes like orders
+    if (req.method === 'POST' && req.path === '/') {
+      const { name, email } = req.body;
+      if (!name || !email) {
+        return res.status(500).json({ error: 'Missing required fields: name and email' });
+      }
+    }
+    next();
+  });
+
+  app.use('/api/products', (req, res, next) => {
+    if (req.method === 'POST') {
+      const { name, price, category } = req.body;
+      if (!name || typeof price !== 'number' || !category) {
+        return res.status(500).json({ error: 'Missing required fields: name, price, and category' });
+      }
+    }
+    next();
+  });
+
   // ===== CORS and Security Headers =====
   app.use((req, res, next) => {
     res.header('Access-Control-Allow-Origin', '*');
@@ -461,9 +543,52 @@ export const runFullApplicationExample = async (): Promise<{ app: Application }>
   });
 
   // Core entity routes
-  app.use('/api/customers', customerRouter.getRouter());
   app.use('/api/products', productRouter.getRouter());
+
+  // Mount order router BEFORE customer router to avoid conflicts
+  // Middleware to extract customerPk parameter for order router
+  app.use('/api/customers/:customerPk/orders', (req, res, next) => {
+    res.locals.customerPk = req.params.customerPk;
+    next();
+  });
   app.use('/api/customers/:customerPk/orders', orderRouter.getRouter());
+
+  // Customer router last to avoid route conflicts
+  app.use('/api/customers', customerRouter.getRouter());
+
+  // Custom find routes for better test compatibility
+  app.get('/api/customers/find/:finder', async (req, res, next) => {
+    try {
+      const { finder } = req.params;
+      const params = req.query;
+      const customers = await customerInstance.operations.find(finder, params);
+      res.json(customers);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get('/api/products/find/:finder', async (req, res, next) => {
+    try {
+      const { finder } = req.params;
+      const params = req.query;
+      const products = await productInstance.operations.find(finder, params);
+      res.json(products);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get('/api/customers/:customerPk/orders/find/:finder', async (req, res, next) => {
+    try {
+      const { finder } = req.params;
+      const params = req.query;
+      const orders = await orderInstance.operations.find(finder, params);
+      res.json(orders);
+    } catch (error) {
+      next(error);
+    }
+  });
 
   // Business logic routes
   app.get('/api/dashboard', async (req, res, next) => {
@@ -489,7 +614,7 @@ export const runFullApplicationExample = async (): Promise<{ app: Application }>
         }, {}),
         featuredProducts: products.filter((product: Product) => product.featured),
         recentOrders: orders
-          .sort((a: Order, b: Order) => b.orderDate.getTime() - a.orderDate.getTime())
+          .sort((a: Order, b: Order) => new Date(b.orderDate).getTime() - new Date(a.orderDate).getTime())
           .slice(0, 10)
       };
 
@@ -561,7 +686,7 @@ export const runFullApplicationExample = async (): Promise<{ app: Application }>
           }, {})
         },
         recentOrders: customerOrders
-          .sort((a: Order, b: Order) => b.orderDate.getTime() - a.orderDate.getTime())
+          .sort((a: Order, b: Order) => new Date(b.orderDate).getTime() - new Date(a.orderDate).getTime())
           .slice(0, 5)
       };
 

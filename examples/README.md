@@ -34,6 +34,16 @@ Shows how fjell-express-router handles enterprise organizational data patterns w
 
 Perfect for understanding how to build production-ready applications with fjell-express-router.
 
+### 4. `router-handlers-example.ts` 🎯 **Router-Level Handler Precedence**
+**Advanced router customization!** Demonstrates how to define custom handlers at the router level that take precedence over library-level handlers:
+- **Router-level handlers**: Define custom actions, facets, allActions, and allFacets directly in router options
+- **Handler precedence**: Router-level handlers are called first, with fallback to library handlers
+- **Cross-system integration**: Perfect for aggregating data from multiple services or external APIs
+- **Business logic separation**: Keep complex integrations at the router layer while maintaining library simplicity
+- **Flexible architecture**: Supports both PItemRouter and CItemRouter with appropriate type safety
+
+Ideal for scenarios requiring external service calls, data aggregation, or complex business logic that shouldn't be in the core library layer.
+
 ## Key Concepts Demonstrated
 
 ### Basic Router Setup (basic-router-example.ts)
@@ -170,6 +180,12 @@ npx tsx examples/full-application-example.ts
 # Server runs on http://localhost:3003
 ```
 
+**Router Handlers Example:**
+```bash
+npx tsx examples/router-handlers-example.ts
+# Server runs on http://localhost:3004
+```
+
 ## Testing the Examples
 
 ### Basic Router Example (Port 3001)
@@ -256,6 +272,37 @@ curl -X POST http://localhost:3003/api/customers \
     },
     "tier": "bronze"
   }'
+```
+
+### Router Handlers Example (Port 3004)
+```bash
+# Test router-level user actions
+curl -X POST http://localhost:3004/api/users/user-1/activate
+curl -X POST http://localhost:3004/api/users/user-1/deactivate
+
+# Test router-level user facets
+curl http://localhost:3004/api/users/user-1/profile
+curl http://localhost:3004/api/users/user-1/activity
+
+# Test router-level all actions
+curl -X POST http://localhost:3004/api/users/bulk-activate
+curl -X POST http://localhost:3004/api/users/send-notifications
+
+# Test router-level all facets
+curl http://localhost:3004/api/users/statistics
+curl http://localhost:3004/api/users/analytics
+
+# Test router-level post actions (nested under users)
+curl -X POST http://localhost:3004/api/users/user-1/posts/post-1/publish
+curl -X POST http://localhost:3004/api/users/user-1/posts/post-1/archive
+
+# Test router-level post facets
+curl http://localhost:3004/api/users/user-1/posts/post-1/analytics
+curl http://localhost:3004/api/users/user-1/posts/post-1/comments
+
+# Test fallback to library handlers for undefined router handlers
+curl -X POST http://localhost:3004/api/users/user-1/someOtherAction
+curl http://localhost:3004/api/users/user-1/someOtherFacet
 ```
 
 ## Integration Patterns

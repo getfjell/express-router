@@ -12,11 +12,12 @@
  */
 
 import { Item, PriKey, UUID } from '@fjell/core';
+import { NotFoundError } from '@fjell/lib';
 import express, { Application } from 'express';
 import { createRegistry, PItemRouter } from '../src';
 
 // Define our data models
-interface User extends Item<'user'> {
+export interface User extends Item<'user'> {
   id: string;
   name: string;
   email: string;
@@ -24,7 +25,7 @@ interface User extends Item<'user'> {
   lastLogin?: Date;
 }
 
-interface Task extends Item<'task'> {
+export interface Task extends Item<'task'> {
   id: string;
   title: string;
   description: string;
@@ -122,7 +123,7 @@ const createUserOperations = () => {
       console.log(`🔍 UserOperations.get(${key.pk}) - Fetching user...`);
       const user = mockUserStorage.get(String(key.pk));
       if (!user) {
-        throw new Error(`User not found: ${key.pk}`);
+        throw new NotFoundError('get', { kta: ['user', '', '', '', '', ''], scopes: [] }, key);
       }
       return user;
     },
@@ -148,7 +149,7 @@ const createUserOperations = () => {
       console.log(`🔄 UserOperations.update(${key.pk}) - Updating user...`);
       const existing = mockUserStorage.get(String(key.pk));
       if (!existing) {
-        throw new Error(`User not found: ${key.pk}`);
+        throw new NotFoundError('update', { kta: ['user', '', '', '', '', ''], scopes: [] }, key);
       }
       const updated: User = {
         ...existing,
@@ -199,7 +200,7 @@ const createTaskOperations = () => {
       console.log(`🔍 TaskOperations.get(${key.pk}) - Fetching task...`);
       const task = mockTaskStorage.get(String(key.pk));
       if (!task) {
-        throw new Error(`Task not found: ${key.pk}`);
+        throw new NotFoundError('get', { kta: ['task', '', '', '', '', ''], scopes: [] }, key);
       }
       return task;
     },
@@ -225,7 +226,7 @@ const createTaskOperations = () => {
       console.log(`🔄 TaskOperations.update(${key.pk}) - Updating task...`);
       const existing = mockTaskStorage.get(String(key.pk));
       if (!existing) {
-        throw new Error(`Task not found: ${key.pk}`);
+        throw new NotFoundError('update', { kta: ['task', '', '', '', '', ''], scopes: [] }, key);
       }
       const updated: Task = {
         ...existing,
