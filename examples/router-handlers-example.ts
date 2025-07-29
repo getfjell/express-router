@@ -110,141 +110,156 @@ const postInstance = {
 
 // Create routers with router-level handlers
 const userRouter = new PItemRouter(userInstance, 'user', {
-  // Router-level action handlers
+  // Router-level action handlers - aligned with library operation signatures
   actions: {
-    activate: async (req: Request, res: Response, ik: PriKey<'user'>) => {
+    activate: async (ik: PriKey<'user'>, actionParams: any, _context: { req: Request, res: Response }) => {
       console.log('Router-level activate action called for user:', ik.pk);
+      console.log('Action params:', actionParams);
       // Custom logic: send activation email, update status, etc.
-      res.json({
+      const result = {
         message: 'User activated via router handler',
         userId: ik.pk,
         timestamp: new Date().toISOString(),
         emailSent: true
-      });
+      };
+      return result;
     },
-    deactivate: async (req: Request, res: Response, ik: PriKey<'user'>) => {
+    deactivate: async (ik: PriKey<'user'>, actionParams: any, _context: { req: Request, res: Response }) => {
       console.log('Router-level deactivate action called for user:', ik.pk);
+      console.log('Action params:', actionParams);
       // Custom logic: send deactivation notification, update status, etc.
-      res.json({
+      const result = {
         message: 'User deactivated via router handler',
         userId: ik.pk,
         timestamp: new Date().toISOString(),
         notificationSent: true
-      });
+      };
+      return result;
     }
   },
 
-  // Router-level facet handlers
+  // Router-level facet handlers - aligned with library operation signatures
   facets: {
-    profile: async (req: Request, res: Response, ik: PriKey<'user'>) => {
+    profile: async (ik: PriKey<'user'>, facetParams: any, _context: { req: Request, res: Response }) => {
       console.log('Router-level profile facet called for user:', ik.pk);
+      console.log('Facet params:', facetParams);
       // Custom logic: aggregate data from multiple sources
-      res.json({
+      return {
         userId: ik.pk,
         basicInfo: { name: 'John Doe', email: 'john@example.com' },
         extendedInfo: { lastLogin: new Date(), preferences: { theme: 'dark' } },
         socialInfo: { followers: 150, following: 75 }
-      });
+      };
     },
-    stats: async (req: Request, res: Response, ik: PriKey<'user'>) => {
+    stats: async (ik: PriKey<'user'>, facetParams: any, _context: { req: Request, res: Response }) => {
       console.log('Router-level stats facet called for user:', ik.pk);
+      console.log('Facet params:', facetParams);
       // Custom logic: calculate statistics from multiple data sources
-      res.json({
+      return {
         userId: ik.pk,
         postsCount: 25,
         commentsCount: 150,
         likesReceived: 500,
         lastActivity: new Date()
-      });
+      };
     }
   },
 
-  // Router-level all action handlers
+  // Router-level all action handlers - aligned with library operation signatures
   allActions: {
-    bulkActivate: async (req: Request, res: Response) => {
+    bulkActivate: async (allActionParams: any, locations: any, _context: { req: Request, res: Response }) => {
       console.log('Router-level bulk activate action called');
+      console.log('All action params:', allActionParams);
+      console.log('Locations:', locations);
       // Custom logic: batch processing, external service integration
-      const { userIds } = req.body;
-      res.json({
+      const { userIds } = allActionParams;
+      return {
         message: 'Bulk activation via router handler',
-        processedUsers: userIds.length,
+        processedUsers: userIds?.length || 0,
         timestamp: new Date().toISOString(),
         externalServiceCalled: true
-      });
+      };
     },
-    bulkDeactivate: async (req: Request, res: Response) => {
+    bulkDeactivate: async (allActionParams: any, locations: any, _context: { req: Request, res: Response }) => {
       console.log('Router-level bulk deactivate action called');
+      console.log('All action params:', allActionParams);
+      console.log('Locations:', locations);
       // Custom logic: batch processing, audit logging
-      const { userIds } = req.body;
-      res.json({
+      const { userIds } = allActionParams;
+      return {
         message: 'Bulk deactivation via router handler',
-        processedUsers: userIds.length,
+        processedUsers: userIds?.length || 0,
         timestamp: new Date().toISOString(),
         auditLogged: true
-      });
+      };
     }
   },
 
-  // Router-level all facet handlers
+  // Router-level all facet handlers - aligned with library operation signatures
   allFacets: {
-    userStats: async (req: Request, res: Response) => {
+    userStats: async (allFacetParams: any, locations: any, _context: { req: Request, res: Response }) => {
       console.log('Router-level user stats facet called');
+      console.log('All facet params:', allFacetParams);
+      console.log('Locations:', locations);
       // Custom logic: aggregate statistics from multiple systems
-      res.json({
+      return {
         totalUsers: 1250,
         activeUsers: 890,
         newUsersThisMonth: 45,
         topRoles: { admin: 15, user: 1200, guest: 35 },
         systemHealth: 'excellent'
-      });
+      };
     },
-    userCount: async (req: Request, res: Response) => {
+    userCount: async (_allFacetParams: any, _locations: any, _context: { req: Request, res: Response }) => {
       console.log('Router-level user count facet called');
       // Custom logic: real-time count from cache
-      res.json({
+      return {
         count: 1250,
         lastUpdated: new Date().toISOString(),
         source: 'cache'
-      });
+      };
     }
   }
 } as any);
 
 const postRouter = new CItemRouter(postInstance, 'post', userRouter, {
-  // Router-level action handlers for posts
+  // Router-level action handlers for posts - aligned with library operation signatures
   actions: {
-    publish: async (req: Request, res: Response, ik: ComKey<'post', 'user'>) => {
+    publish: async (ik: ComKey<'post', 'user'>, actionParams: any, _context: { req: Request, res: Response }) => {
       console.log('Router-level publish action called for post:', ik.pk);
+      console.log('Action params:', actionParams);
       // Custom logic: publish to social media, send notifications
-      res.json({
+      return {
         message: 'Post published via router handler',
         postId: ik.pk,
         authorId: ik.loc[0].lk,
         publishedAt: new Date().toISOString(),
         socialMediaPosted: true,
         notificationsSent: true
-      });
+      };
     },
-    unpublish: async (req: Request, res: Response, ik: ComKey<'post', 'user'>) => {
+    unpublish: async (ik: ComKey<'post', 'user'>, actionParams: any, _context: { req: Request, res: Response }) => {
       console.log('Router-level unpublish action called for post:', ik.pk);
+      console.log('Action params:', actionParams);
       // Custom logic: remove from social media, send notifications
-      res.json({
+      return {
         message: 'Post unpublished via router handler',
         postId: ik.pk,
         authorId: ik.loc[0].lk,
         unpublishedAt: new Date().toISOString(),
         socialMediaRemoved: true,
         notificationsSent: true
-      });
+      };
     }
   },
 
-  // Router-level facet handlers for posts
+  // Router-level facet handlers for posts - aligned with library operation signatures
   facets: {
-    analytics: async (req: Request, res: Response, ik: ComKey<'post', 'user'>) => {
+    analytics: async (ik: ComKey<'post', 'user'>, facetParams: any, _context: { req: Request, res: Response }) => {
       console.log('Router-level analytics facet called for post:', ik.pk);
+      console.log('Facet params:', facetParams);
       // Custom logic: aggregate analytics from multiple sources
-      res.json({
+      return {
         postId: ik.pk,
         views: 1250,
         likes: 89,
@@ -252,72 +267,81 @@ const postRouter = new CItemRouter(postInstance, 'post', userRouter, {
         comments: 15,
         engagementRate: 0.12,
         topReferrers: ['twitter.com', 'facebook.com', 'linkedin.com']
-      });
+      };
     },
-    comments: async (req: Request, res: Response, ik: ComKey<'post', 'user'>) => {
+    comments: async (ik: ComKey<'post', 'user'>, facetParams: any, _context: { req: Request, res: Response }) => {
       console.log('Router-level comments facet called for post:', ik.pk);
+      console.log('Facet params:', facetParams);
       // Custom logic: fetch comments from external service
-      res.json({
+      return {
         postId: ik.pk,
         comments: [
           { id: 'comment_1', text: 'Great post!', author: 'user_2', timestamp: new Date() },
           { id: 'comment_2', text: 'Very informative', author: 'user_3', timestamp: new Date() }
         ],
         totalComments: 2
-      });
+      };
     }
   },
 
-  // Router-level all action handlers for posts
+  // Router-level all action handlers for posts - aligned with library operation signatures
   allActions: {
-    bulkPublish: async (req: Request, res: Response) => {
+    bulkPublish: async (allActionParams: any, locations: any, _context: { req: Request, res: Response }) => {
       console.log('Router-level bulk publish action called');
+      console.log('All action params:', allActionParams);
+      console.log('Locations:', locations);
       // Custom logic: batch publishing to multiple platforms
-      const { postIds } = req.body;
-      res.json({
+      const { postIds } = allActionParams;
+      return {
         message: 'Bulk publish via router handler',
-        processedPosts: postIds.length,
+        processedPosts: postIds?.length || 0,
         timestamp: new Date().toISOString(),
         platformsUpdated: ['twitter', 'facebook', 'linkedin']
-      });
+      };
     },
-    bulkUnpublish: async (req: Request, res: Response) => {
+    bulkUnpublish: async (allActionParams: any, locations: any, _context: { req: Request, res: Response }) => {
       console.log('Router-level bulk unpublish action called');
+      console.log('All action params:', allActionParams);
+      console.log('Locations:', locations);
       // Custom logic: batch unpublishing from multiple platforms
-      const { postIds } = req.body;
-      res.json({
+      const { postIds } = allActionParams;
+      return {
         message: 'Bulk unpublish via router handler',
-        processedPosts: postIds.length,
+        processedPosts: postIds?.length || 0,
         timestamp: new Date().toISOString(),
         platformsUpdated: ['twitter', 'facebook', 'linkedin']
-      });
+      };
     }
   },
 
-  // Router-level all facet handlers for posts
+  // Router-level all facet handlers for posts - aligned with library operation signatures
   allFacets: {
-    postStats: async (req: Request, res: Response) => {
+    postStats: async (allFacetParams: any, locations: any, _context: { req: Request, res: Response }) => {
       console.log('Router-level post stats facet called');
+      console.log('All facet params:', allFacetParams);
+      console.log('Locations:', locations);
       // Custom logic: aggregate post statistics
-      res.json({
+      return {
         totalPosts: 450,
         publishedPosts: 380,
         draftPosts: 70,
         averageViews: 850,
         averageLikes: 45,
         topCategories: ['technology', 'business', 'lifestyle']
-      });
+      };
     },
-    postCount: async (req: Request, res: Response) => {
+    postCount: async (allFacetParams: any, locations: any, _context: { req: Request, res: Response }) => {
       console.log('Router-level post count facet called');
+      console.log('All facet params:', allFacetParams);
+      console.log('Locations:', locations);
       // Custom logic: real-time count with filtering
-      res.json({
+      return {
         count: 450,
         published: 380,
         draft: 70,
         lastUpdated: new Date().toISOString(),
         source: 'database'
-      });
+      };
     }
   }
 } as any);
