@@ -356,9 +356,25 @@ export class ItemRouter<
 
     this.logger.debug('Deleting Item', { query: req.query, params: req.params, locals: res.locals });
     const ik = this.getIk(res);
-    const removedItem = await libOperations.remove(ik);
-    const item = validatePK(removedItem, this.getPkType());
-    res.json(item);
+    try {
+      const removedItem = await libOperations.remove(ik);
+      const item = validatePK(removedItem, this.getPkType());
+      res.json(item);
+    } catch (err: any) {
+      if (err instanceof NotFoundError) {
+        this.logger.error('Item Not Found for Delete', { ik, message: err?.message, stack: err?.stack });
+        res.status(404).json({
+          ik,
+          message: "Item Not Found",
+        });
+      } else {
+        this.logger.error('General Error in Delete', { ik, message: err?.message, stack: err?.stack });
+        res.status(500).json({
+          ik,
+          message: "General Error",
+        });
+      }
+    }
   };
 
   /* eslint-disable */
@@ -398,9 +414,25 @@ export class ItemRouter<
     this.logger.debug('Updating Item',
       { body: req?.body, query: req?.query, params: req?.params, locals: res?.locals });
     const ik = this.getIk(res);
-    const itemToUpdate = this.convertDates(req.body as Partial<Item<S, L1, L2, L3, L4, L5>>);
-    const retItem = validatePK(await libOperations.update(ik, itemToUpdate), this.getPkType());
-    res.json(retItem);
+    try {
+      const itemToUpdate = this.convertDates(req.body as Partial<Item<S, L1, L2, L3, L4, L5>>);
+      const retItem = validatePK(await libOperations.update(ik, itemToUpdate), this.getPkType());
+      res.json(retItem);
+    } catch (err: any) {
+      if (err instanceof NotFoundError) {
+        this.logger.error('Item Not Found for Update', { ik, message: err?.message, stack: err?.stack });
+        res.status(404).json({
+          ik,
+          message: "Item Not Found",
+        });
+      } else {
+        this.logger.error('General Error in Update', { ik, message: err?.message, stack: err?.stack });
+        res.status(500).json({
+          ik,
+          message: "General Error",
+        });
+      }
+    }
   };
 
   public convertDates = (item: Partial<Item<S, L1, L2, L3, L4, L5>>): Partial<Item<S, L1, L2, L3, L4, L5>> => {
