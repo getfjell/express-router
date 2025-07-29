@@ -352,7 +352,12 @@ describe("ItemRouter", () => {
       req.body = testItem;
       res.locals = { testPk: "1-1-1-1-1" };
 
-      await expect(router['updateItem'](req as Request, res as Response)).rejects.toThrow("Update failed");
+      await router['updateItem'](req as Request, res as Response);
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.json).toHaveBeenCalledWith({
+        ik: comKey,
+        message: "General Error",
+      });
     });
   });
 
@@ -537,7 +542,7 @@ describe("ItemRouter", () => {
       req.path = '/test/customAllAction';
       await abstractRouter['postAllAction'](req as Request, res as Response);
       expect(res.status).toHaveBeenCalledWith(500);
-      expect(res.json).toHaveBeenCalledWith({ error: 'Item Actions are not configured' });
+      expect(res.json).toHaveBeenCalledWith({ error: 'All Actions are not configured' });
     });
 
     it('should return error when specific allAction does not exist', async () => {
@@ -545,7 +550,7 @@ describe("ItemRouter", () => {
       req.path = '/test/nonExistentAllAction';
       await router['postAllAction'](req as Request, res as Response);
       expect(res.status).toHaveBeenCalledWith(500);
-      expect(res.json).toHaveBeenCalledWith({ error: 'Item Action is not configured' });
+      expect(res.json).toHaveBeenCalledWith({ error: 'All Action is not configured' });
     });
 
     it('should handle error when lib.allAction fails', async () => {
@@ -600,7 +605,7 @@ describe("ItemRouter", () => {
       req.path = '/test/customAllFacet';
       await abstractRouter['getAllFacet'](req as Request, res as Response);
       expect(res.status).toHaveBeenCalledWith(500);
-      expect(res.json).toHaveBeenCalledWith({ error: 'Item Facets are not configured' });
+      expect(res.json).toHaveBeenCalledWith({ error: 'All Facets are not configured' });
     });
 
     it('should return error when specific allFacet does not exist', async () => {
@@ -608,7 +613,7 @@ describe("ItemRouter", () => {
       req.path = '/test/nonExistentAllFacet';
       await router['getAllFacet'](req as Request, res as Response);
       expect(res.status).toHaveBeenCalledWith(500);
-      expect(res.json).toHaveBeenCalledWith({ error: 'Item Facet is not configured' });
+      expect(res.json).toHaveBeenCalledWith({ error: 'All Facet is not configured' });
     });
 
     it('should handle error when lib.allFacet fails', async () => {

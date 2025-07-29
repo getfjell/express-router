@@ -54,7 +54,7 @@ describe("CItemRouter", () => {
     mockParentRoute = { getLKA: vi.fn(), getLk: vi.fn(), getPk: vi.fn(), getPkType: vi.fn(), getLocations: vi.fn() };
     router = new CItemRouter(mockLib, "test", mockParentRoute);
     req = { path: '/test/path' } as Request;
-    res = { json: vi.fn(), locals: {} } as unknown as Response;
+    res = { json: vi.fn(), status: vi.fn().mockReturnThis(), locals: {} } as unknown as Response;
   });
 
   it("should return true/false based on parent existence", () => {
@@ -127,7 +127,11 @@ describe("CItemRouter", () => {
     vi.spyOn(router, "getLocations").mockReturnValue(locKeyArray);
     vi.spyOn(router, "convertDates").mockReturnValue(testItem);
     mockLib.operations.create = vi.fn().mockRejectedValue(new Error("Test error"));
-    await expect(router['createItem'](req, res)).rejects.toThrow("Test error");
+    await router['createItem'](req, res);
+    expect(res.status).toHaveBeenCalledWith(500);
+    expect(res.json).toHaveBeenCalledWith({
+      message: "General Error",
+    });
     expect(router.getLocations).toHaveBeenCalledWith(res);
     expect(router.convertDates).toHaveBeenCalledWith(testItem);
     expect(mockLib.operations.create).toHaveBeenCalledWith(testItem, { locations: locKeyArray });
@@ -256,13 +260,21 @@ describe("CItemRouter", () => {
       vi.spyOn(router, "convertDates").mockReturnValue(testItem);
       mockLib.operations.create = vi.fn().mockResolvedValue(testItem);
       vi.spyOn(router, "postCreateItem").mockRejectedValue(new Error("PostCreate error"));
-      await expect(router['createItem'](req, res)).rejects.toThrow("PostCreate error");
+      await router['createItem'](req, res);
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.json).toHaveBeenCalledWith({
+        message: "General Error",
+      });
       expect(router.postCreateItem).toHaveBeenCalledWith(testItem);
     });
 
     it('should handle error in convertDates', async () => {
       vi.spyOn(router, "convertDates").mockImplementation(() => { throw new Error("ConvertDates error"); });
-      await expect(router['createItem'](req, res)).rejects.toThrow("ConvertDates error");
+      await router['createItem'](req, res);
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.json).toHaveBeenCalledWith({
+        message: "General Error",
+      });
       expect(router.convertDates).toHaveBeenCalledWith(testItem);
     });
   });

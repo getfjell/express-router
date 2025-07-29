@@ -110,6 +110,207 @@ This creates endpoints like:
 
 ## Advanced Usage
 
+### Router-Level Handlers
+
+Fjell Express Router supports router-level handlers for actions, facets, allActions, and allFacets. These handlers take precedence over library-level handlers and are ideal for implementing cross-system integrations, external service calls, or complex business logic that doesn't belong in the library layer.
+
+#### When to Use Router-Level Handlers
+
+- **Cross-system integrations**: When you need to call external services (APIs, databases, etc.)
+- **Complex aggregations**: When you need to combine data from multiple sources
+- **External notifications**: When you need to send emails, push notifications, etc.
+- **Audit logging**: When you need to log actions to external systems
+- **Caching strategies**: When you need custom caching logic
+
+#### Example: Router-Level Handlers
+
+```typescript
+import { PItemRouter, CItemRouter } from '@fjell/express-router';
+import { Item, PriKey, ComKey } from '@fjell/core';
+import { Request, Response } from 'express';
+
+// Define your data models
+interface User extends Item<'user'> {
+  id: string;
+  name: string;
+  email: string;
+}
+
+interface Post extends Item<'post', 'user'> {
+  id: string;
+  title: string;
+  content: string;
+  authorId: string;
+}
+
+// Create routers with router-level handlers
+const userRouter = new PItemRouter(userInstance, 'user', {
+  // Router-level action handlers
+  actions: {
+    activate: async (req: Request, res: Response, ik: PriKey<'user'>) => {
+      // Custom logic: send activation email, update status, etc.
+      const user = await userInstance.operations.get(ik);
+      await emailService.sendActivationEmail(user.email);
+      await auditService.logAction('user_activated', ik.pk);
+
+      res.json({
+        message: 'User activated via router handler',
+        userId: ik.pk,
+        emailSent: true
+      });
+    },
+    deactivate: async (req: Request, res: Response, ik: PriKey<'user'>) => {
+      // Custom logic: send deactivation notification, update status, etc.
+      const user = await userInstance.operations.get(ik);
+      await notificationService.sendDeactivationNotification(user);
+      await auditService.logAction('user_deactivated', ik.pk);
+
+      res.json({
+        message: 'User deactivated via router handler',
+        userId: ik.pk,
+        notificationSent: true
+      });
+    }
+  },
+
+  // Router-level facet handlers
+  facets: {
+    profile: async (req: Request, res: Response, ik: PriKey<'user'>) => {
+      // Custom logic: aggregate data from multiple sources
+      const user = await userInstance.operations.get(ik);
+      const socialData = await socialService.getUserData(ik.pk);
+      const preferences = await preferenceService.getUserPreferences(ik.pk);
+
+      res.json({
+        userId: ik.pk,
+        basicInfo: user,
+        socialInfo: socialData,
+        preferences: preferences
+      });
+    },
+    stats: async (req: Request, res: Response, ik: PriKey<'user'>) => {
+      // Custom logic: calculate statistics from multiple data sources
+      const postsCount = await postService.getUserPostsCount(ik.pk);
+      const commentsCount = await commentService.getUserCommentsCount(ik.pk);
+      const likesReceived = await likeService.getUserLikesCount(ik.pk);
+
+      res.json({
+        userId: ik.pk,
+        postsCount,
+        commentsCount,
+        likesReceived,
+        lastActivity: new Date()
+      });
+    }
+  },
+
+  // Router-level all action handlers
+  allActions: {
+    bulkActivate: async (req: Request, res: Response) => {
+      // Custom logic: batch processing, external service integration
+      const { userIds } = req.body;
+      const results = await Promise.all(
+        userIds.map(async (userId) => {
+          const user = await userInstance.operations.get({ kt: 'user', pk: userId });
+          await emailService.sendActivationEmail(user.email);
+          return { userId, emailSent: true };
+        })
+      );
+
+      res.json({
+        message: 'Bulk activation via router handler',
+        processedUsers: results.length,
+        results
+      });
+    }
+  },
+
+  // Router-level all facet handlers
+  allFacets: {
+    userStats: async (req: Request, res: Response) => {
+      // Custom logic: aggregate statistics from multiple systems
+      const totalUsers = await userInstance.operations.all().then(users => users.length);
+      const activeUsers = await analyticsService.getActiveUsersCount();
+      const newUsersThisMonth = await analyticsService.getNewUsersThisMonth();
+
+      res.json({
+        totalUsers,
+        activeUsers,
+        newUsersThisMonth,
+        systemHealth: 'excellent'
+      });
+    }
+  }
+});
+
+// Child router with router-level handlers
+const postRouter = new CItemRouter(postInstance, 'post', userRouter, {
+  actions: {
+    publish: async (req: Request, res: Response, ik: ComKey<'post', 'user'>) => {
+      // Custom logic: publish to social media, send notifications
+      const post = await postInstance.operations.get(ik);
+      await socialMediaService.publishToTwitter(post);
+      await socialMediaService.publishToLinkedIn(post);
+      await notificationService.notifyFollowers(post.authorId, post);
+
+      res.json({
+        message: 'Post published via router handler',
+        postId: ik.pk,
+        socialMediaPosted: true,
+        notificationsSent: true
+      });
+    }
+  },
+
+  facets: {
+    analytics: async (req: Request, res: Response, ik: ComKey<'post', 'user'>) => {
+      // Custom logic: aggregate analytics from multiple sources
+      const views = await analyticsService.getPostViews(ik.pk);
+      const likes = await socialService.getPostLikes(ik.pk);
+      const shares = await socialService.getPostShares(ik.pk);
+
+      res.json({
+        postId: ik.pk,
+        views,
+        likes,
+        shares,
+        engagementRate: (likes + shares) / views
+      });
+    }
+  }
+});
+```
+
+#### Handler Priority
+
+Router-level handlers take precedence over library-level handlers:
+
+1. **Router-level handler exists**: Use router handler
+2. **Router-level handler doesn't exist**: Fallback to library handler
+3. **No handlers exist**: Return error
+
+This allows you to:
+- Override specific handlers while keeping others at the library level
+- Implement handlers only at the router level when needed
+- Mix and match router and library handlers as appropriate
+
+#### Handler Signatures
+
+**Item Actions & Facets** (for PItemRouter):
+```typescript
+async (req: Request, res: Response, ik: PriKey<S>) => Promise<void>
+```
+
+**Item Actions & Facets** (for CItemRouter):
+```typescript
+async (req: Request, res: Response, ik: ComKey<S, L1, L2, L3, L4, L5>) => Promise<void>
+```
+
+**All Actions & Facets** (for both router types):
+```typescript
+async (req: Request, res: Response) => Promise<void>
+```
+
 ### Custom Business Logic
 
 Add custom routes alongside automatic CRUD operations:
@@ -234,6 +435,7 @@ This package includes comprehensive examples in the `examples/` directory:
 
 - **`basic-router-example.ts`** - Start here for fundamental usage patterns
 - **`nested-router-example.ts`** - Hierarchical data management with organizations/departments/employees
+- **`router-handlers-example.ts`** - Router-level handlers for cross-system integrations
 - **`full-application-example.ts`** - Production-ready e-commerce application
 
 Run examples:
@@ -244,6 +446,9 @@ npx tsx examples/basic-router-example.ts
 
 # Nested routing example
 npx tsx examples/nested-router-example.ts
+
+# Router handlers example
+npx tsx examples/router-handlers-example.ts
 
 # Full application example
 npx tsx examples/full-application-example.ts

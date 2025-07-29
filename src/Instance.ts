@@ -47,12 +47,12 @@ export const createInstance = <
   L4 extends string = never,
   L5 extends string = never
 >(
-  registry: Registry,
-  coordinate: Coordinate<S, L1, L2, L3, L4, L5>,
-  router: ItemRouter<S, L1, L2, L3, L4, L5>,
-  operations: Operations<V, S, L1, L2, L3, L4, L5>,
-  options?: Options<V, S, L1, L2, L3, L4, L5>,
-): Instance<V, S, L1, L2, L3, L4, L5> => {
+    registry: Registry,
+    coordinate: Coordinate<S, L1, L2, L3, L4, L5>,
+    router: ItemRouter<S, L1, L2, L3, L4, L5>,
+    operations: Operations<V, S, L1, L2, L3, L4, L5>,
+    options?: Options<V, S, L1, L2, L3, L4, L5>,
+  ): Instance<V, S, L1, L2, L3, L4, L5> => {
   logger.debug("createInstance", { coordinate, router, registry, operations, options });
   const baseInstance = createBaseInstance(registry, coordinate);
   return { ...baseInstance, router, operations, options: options || {} as Options<V, S, L1, L2, L3, L4, L5> };

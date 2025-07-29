@@ -1,6 +1,7 @@
 import {
   ComKey, Item, ItemQuery, LocKey, LocKeyArray, paramsToQuery, PriKey, QueryParams, validatePK
 } from "@fjell/core";
+import { NotFoundError } from "@fjell/lib";
 import { Request, Response } from "express";
 import { ItemRouter, ItemRouterOptions } from "./ItemRouter.js";
 import { Instance } from "./Instance.js";
@@ -25,7 +26,7 @@ export class CItemRouter<
     lib: Instance<T, S, L1, L2, L3, L4, L5>,
     type: S,
     parentRoute: ItemRouter<L1, L2, L3, L4, L5, never>,
-    options: ItemRouterOptions = {},
+    options: ItemRouterOptions<S, L1, L2, L3, L4, L5> = {},
   ) {
     super(lib as any, type, options);
     this.parentRoute = parentRoute;
@@ -59,12 +60,26 @@ export class CItemRouter<
   protected createItem = async (req: Request, res: Response) => {
     const libOperations = this.lib.operations;
     this.logger.default('Creating Item', { body: req?.body, query: req?.query, params: req?.params, locals: res?.locals });
-    const itemToCreate = this.convertDates(req.body as Item<S, L1, L2, L3, L4, L5>);
-    let item = validatePK(await libOperations.create(
-      itemToCreate, { locations: this.getLocations(res) }), this.getPkType()) as Item<S, L1, L2, L3, L4, L5>;
-    item = await this.postCreateItem(item);
-    this.logger.default('Created Item %j', item);
-    res.json(item);
+    try {
+      const itemToCreate = this.convertDates(req.body as Item<S, L1, L2, L3, L4, L5>);
+      let item = validatePK(await libOperations.create(
+        itemToCreate, { locations: this.getLocations(res) }), this.getPkType()) as Item<S, L1, L2, L3, L4, L5>;
+      item = await this.postCreateItem(item);
+      this.logger.default('Created Item %j', item);
+      res.json(item);
+    } catch (err: any) {
+      if (err instanceof NotFoundError) {
+        this.logger.error('Item Not Found for Create', { message: err?.message, stack: err?.stack });
+        res.status(404).json({
+          message: "Item Not Found",
+        });
+      } else {
+        this.logger.error('General Error in Create', { message: err?.message, stack: err?.stack });
+        res.status(500).json({
+          message: "General Error",
+        });
+      }
+    }
   };
 
   protected findItems = async (req: Request, res: Response) => {
