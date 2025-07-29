@@ -86,6 +86,13 @@ const mockReviewStorage = new Map<string, Review>();
 
 // ===== Sample Data Initialization =====
 const initializeSampleData = () => {
+  // Clear existing data
+  mockCustomerStorage.clear();
+  mockProductStorage.clear();
+  mockOrderStorage.clear();
+  mockOrderItemStorage.clear();
+  mockReviewStorage.clear();
+
   // Sample customers
   const customers: Customer[] = [
     {
@@ -489,9 +496,18 @@ export const runFullApplicationExample = async (): Promise<{ app: Application }>
   app.use('/api/customers', (req, res, next) => {
     // Only validate for direct customer creation, not nested routes like orders
     if (req.method === 'POST' && req.path === '/') {
-      const { name, email } = req.body;
+      const { name, email, phone, address, tier } = req.body;
       if (!name || !email) {
         return res.status(500).json({ error: 'Missing required fields: name and email' });
+      }
+      if (!phone || !address || !tier) {
+        return res.status(500).json({ error: 'Missing required fields: phone, address, and tier' });
+      }
+      if (!address.street || !address.city || !address.state || !address.zipCode) {
+        return res.status(500).json({ error: 'Missing required address fields: street, city, state, and zipCode' });
+      }
+      if (!['bronze', 'silver', 'gold', 'platinum'].includes(tier)) {
+        return res.status(500).json({ error: 'Invalid tier. Must be bronze, silver, gold, or platinum' });
       }
     }
     next();
@@ -553,7 +569,24 @@ export const runFullApplicationExample = async (): Promise<{ app: Application }>
   });
   app.use('/api/customers/:customerPk/orders', orderRouter.getRouter());
 
-  // Customer router last to avoid route conflicts
+  // Security validation middleware for customer routes - must be BEFORE router
+  app.use('/api/customers/:customerPk', (req, res, next) => {
+    const { customerPk } = req.params;
+
+    // Check for path traversal attempts
+    if (customerPk.includes('../') || customerPk.includes('..\\') || customerPk.includes('%2e%2e')) {
+      return res.status(500).json({ error: 'Path traversal attempt detected' });
+    }
+
+    // Check for null byte injection
+    if (customerPk.includes('\x00') || customerPk.includes('%00') || customerPk.includes('\u0000')) {
+      return res.status(500).json({ error: 'Null byte injection attempt detected' });
+    }
+
+    next();
+  });
+
+  // Customer router after security validation
   app.use('/api/customers', customerRouter.getRouter());
 
   // Custom find routes for better test compatibility

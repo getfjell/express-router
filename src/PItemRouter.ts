@@ -25,7 +25,7 @@ export class PItemRouter<T extends Item<S>, S extends string> extends ItemRouter
     let item = validatePK(await libOperations.create(itemToCreate), this.getPkType()) as Item<S>;
     item = await this.postCreateItem(item);
     this.logger.default('Created Item %j', item);
-    res.json(item);
+    res.status(201).json(item);
   };
 
   protected findItems = async (req: Request, res: Response) => {

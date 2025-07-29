@@ -366,21 +366,57 @@ export class ItemRouter<
     router.get('/', this.findItems);
     router.post('/', this.createItem);
 
-    this.logger.default('All Actions supplied to Router', { allActions: libOptions.allActions });
-    if (libOptions.allActions) {
-      Object.keys(libOptions.allActions).forEach((actionKey) => {
-        this.logger.debug('Configuring All Action %s', actionKey);
-        // TODO: Ok, this is a bit of a hack, but we need to customize the types of the request handlers
+    // Track registered routes to detect collisions
+    const registeredAllActions = new Set<string>();
+    const registeredAllFacets = new Set<string>();
+    const registeredItemActions = new Set<string>();
+    const registeredItemFacets = new Set<string>();
+
+    // Configure router-level allActions first (highest precedence)
+    this.logger.default('Router All Actions', { allActions: this.options.allActions });
+    if (this.options.allActions) {
+      Object.keys(this.options.allActions).forEach((actionKey) => {
+        this.logger.debug('Configuring Router All Action %s', actionKey);
         router.post(`/${actionKey}`, this.postAllAction);
+        registeredAllActions.add(actionKey);
       });
     }
 
-    this.logger.default('All Facets supplied to Router', { allFacets: libOptions.allFacets });
+    // Configure library allActions, warn on conflicts
+    this.logger.default('Library All Actions', { allActions: libOptions.allActions });
+    if (libOptions.allActions) {
+      Object.keys(libOptions.allActions).forEach((actionKey) => {
+        if (registeredAllActions.has(actionKey)) {
+          this.logger.warning('All Action name collision - router-level handler takes precedence', { actionKey });
+        } else {
+          this.logger.debug('Configuring Library All Action %s', actionKey);
+          router.post(`/${actionKey}`, this.postAllAction);
+          registeredAllActions.add(actionKey);
+        }
+      });
+    }
+
+    // Configure router-level allFacets first (highest precedence)
+    this.logger.default('Router All Facets', { allFacets: this.options.allFacets });
+    if (this.options.allFacets) {
+      Object.keys(this.options.allFacets).forEach((facetKey) => {
+        this.logger.debug('Configuring Router All Facet %s', facetKey);
+        router.get(`/${facetKey}`, this.getAllFacet);
+        registeredAllFacets.add(facetKey);
+      });
+    }
+
+    // Configure library allFacets, warn on conflicts
+    this.logger.default('Library All Facets', { allFacets: libOptions.allFacets });
     if (libOptions.allFacets) {
       Object.keys(libOptions.allFacets).forEach((facetKey) => {
-        this.logger.debug('Configuring All Facet %s', facetKey);
-        // TODO: Ok, this is a bit of a hack, but we need to customize the types of the request handlers
-        router.get(`/${facetKey}`, this.getAllFacet);
+        if (registeredAllFacets.has(facetKey)) {
+          this.logger.warning('All Facet name collision - router-level handler takes precedence', { facetKey });
+        } else {
+          this.logger.debug('Configuring Library All Facet %s', facetKey);
+          router.get(`/${facetKey}`, this.getAllFacet);
+          registeredAllFacets.add(facetKey);
+        }
       });
     }
 
@@ -389,21 +425,51 @@ export class ItemRouter<
     itemRouter.put('/', this.updateItem);
     itemRouter.delete('/', this.deleteItem);
 
-    this.logger.default('Item Actions supplied to Router', { itemActions: libOptions.actions });
-    if (libOptions.actions) {
-      Object.keys(libOptions.actions).forEach((actionKey) => {
-        this.logger.debug('Configuring Item Action %s', actionKey);
-        // TODO: Ok, this is a bit of a hack, but we need to customize the types of the request handlers
-        itemRouter.post(`/${actionKey}`, this.postItemAction)
+    // Configure router-level item actions first (highest precedence)
+    this.logger.default('Router Item Actions', { itemActions: this.options.actions });
+    if (this.options.actions) {
+      Object.keys(this.options.actions).forEach((actionKey) => {
+        this.logger.debug('Configuring Router Item Action %s', actionKey);
+        itemRouter.post(`/${actionKey}`, this.postItemAction);
+        registeredItemActions.add(actionKey);
       });
     }
 
-    this.logger.default('Item Facets supplied to Router', { itemFacets: libOptions.facets });
+    // Configure library item actions, warn on conflicts
+    this.logger.default('Library Item Actions', { itemActions: libOptions.actions });
+    if (libOptions.actions) {
+      Object.keys(libOptions.actions).forEach((actionKey) => {
+        if (registeredItemActions.has(actionKey)) {
+          this.logger.warning('Item Action name collision - router-level handler takes precedence', { actionKey });
+        } else {
+          this.logger.debug('Configuring Library Item Action %s', actionKey);
+          itemRouter.post(`/${actionKey}`, this.postItemAction);
+          registeredItemActions.add(actionKey);
+        }
+      });
+    }
+
+    // Configure router-level item facets first (highest precedence)
+    this.logger.default('Router Item Facets', { itemFacets: this.options.facets });
+    if (this.options.facets) {
+      Object.keys(this.options.facets).forEach((facetKey) => {
+        this.logger.debug('Configuring Router Item Facet %s', facetKey);
+        itemRouter.get(`/${facetKey}`, this.getItemFacet);
+        registeredItemFacets.add(facetKey);
+      });
+    }
+
+    // Configure library item facets, warn on conflicts
+    this.logger.default('Library Item Facets', { itemFacets: libOptions.facets });
     if (libOptions.facets) {
       Object.keys(libOptions.facets).forEach((facetKey) => {
-        this.logger.debug('Configuring Item Facet %s', facetKey);
-        // TODO: Ok, this is a bit of a hack, but we need to customize the types of the request handlers
-        itemRouter.get(`/${facetKey}`, this.getItemFacet)
+        if (registeredItemFacets.has(facetKey)) {
+          this.logger.warning('Item Facet name collision - router-level handler takes precedence', { facetKey });
+        } else {
+          this.logger.debug('Configuring Library Item Facet %s', facetKey);
+          itemRouter.get(`/${facetKey}`, this.getItemFacet);
+          registeredItemFacets.add(facetKey);
+        }
       });
     }
 

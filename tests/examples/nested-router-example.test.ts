@@ -8,12 +8,11 @@
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import request from 'supertest';
-import { Application } from 'express';
 import { runNestedRouterExample } from '../../examples/nested-router-example';
 import type { Department, Employee, Organization } from '../../examples/nested-router-example';
 
 describe('Nested Router Example', () => {
-  let app: Application;
+  let app: any;
   let supertest: any;
 
   beforeEach(async () => {
@@ -139,7 +138,7 @@ describe('Nested Router Example', () => {
         .post('/api/organizations')
         .send(newOrg);
 
-      expect(response.status).toBe(200);
+      expect(response.status).toBe(201);
       expect(response.body.name).toBe(newOrg.name);
       expect(response.body.type).toBe(newOrg.type);
       expect(response.body.industry).toBe(newOrg.industry);
@@ -233,7 +232,7 @@ describe('Nested Router Example', () => {
         .post('/api/organizations/org-1/departments')
         .send(newDept);
 
-      expect(response.status).toBe(200);
+      expect(response.status).toBe(201);
       expect(response.body.name).toBe(newDept.name);
       expect(response.body.budget).toBe(newDept.budget);
       expect(response.body.headCount).toBe(newDept.headCount);
@@ -335,7 +334,7 @@ describe('Nested Router Example', () => {
         .post('/api/organizations/org-1/departments/dept-1/employees')
         .send(newEmp);
 
-      expect(response.status).toBe(200);
+      expect(response.status).toBe(201);
       expect(response.body.name).toBe(newEmp.name);
       expect(response.body.email).toBe(newEmp.email);
       expect(response.body.position).toBe(newEmp.position);
@@ -463,7 +462,7 @@ describe('Nested Router Example', () => {
         .post('/api/organizations')
         .send(newOrg);
 
-      expect(orgResponse.status).toBe(200);
+      expect(orgResponse.status).toBe(201);
       const orgId = orgResponse.body.id;
 
       // Create a department in that organization
@@ -477,7 +476,7 @@ describe('Nested Router Example', () => {
         .post(`/api/organizations/${orgId}/departments`)
         .send(newDept);
 
-      expect(deptResponse.status).toBe(200);
+      expect(deptResponse.status).toBe(201);
       const deptId = deptResponse.body.id;
       expect(deptResponse.body.organizationId).toBe(orgId);
 
@@ -494,7 +493,7 @@ describe('Nested Router Example', () => {
         .post(`/api/organizations/${orgId}/departments/${deptId}/employees`)
         .send(newEmp);
 
-      expect(empResponse.status).toBe(200);
+      expect(empResponse.status).toBe(201);
       expect(empResponse.body.organizationId).toBe(orgId);
       expect(empResponse.body.departmentId).toBe(deptId);
     });
