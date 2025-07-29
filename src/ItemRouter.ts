@@ -14,7 +14,23 @@ import deepmerge from "deepmerge";
 import { Request, Response, Router } from "express";
 import LibLogger from "./logger.js";
 
-export type ItemRouterOptions = Record<string, never>;
+export type ItemRouterOptions<
+  S extends string = string,
+  L1 extends string = never,
+  L2 extends string = never,
+  L3 extends string = never,
+  L4 extends string = never,
+  L5 extends string = never
+> = {
+  /** Handlers for item actions */
+  actions?: Record<string, (req: Request, res: Response, ik: PriKey<S> | ComKey<S, L1, L2, L3, L4, L5>) => Promise<void>>;
+  /** Handlers for item facets */
+  facets?: Record<string, (req: Request, res: Response, ik: PriKey<S> | ComKey<S, L1, L2, L3, L4, L5>) => Promise<void>>;
+  /** Handlers for all actions */
+  allActions?: Record<string, (req: Request, res: Response) => Promise<void>>;
+  /** Handlers for all facets */
+  allFacets?: Record<string, (req: Request, res: Response) => Promise<void>>;
+};
 
 export class ItemRouter<
   S extends string,
@@ -27,14 +43,14 @@ export class ItemRouter<
 
   protected lib: Instance<Item<S, L1, L2, L3, L4, L5>, S, L1, L2, L3, L4, L5>;
   private keyType: S;
-  protected options: ItemRouterOptions;
+  protected options: ItemRouterOptions<S, L1, L2, L3, L4, L5>;
   private childRouters: Record<string, Router> = {};
   protected logger;
 
   constructor(
     lib: Instance<Item<S, L1, L2, L3, L4, L5>, S, L1, L2, L3, L4, L5>,
     keyType: S,
-    options: ItemRouterOptions = {}
+    options: ItemRouterOptions<S, L1, L2, L3, L4, L5> = {}
   ) {
     this.lib = lib;
     this.keyType = keyType;
@@ -80,15 +96,30 @@ export class ItemRouter<
     const libOperations = this.lib.operations;
     this.logger.debug('Posting All Action', { query: req?.query, params: req?.params, locals: res?.locals });
     const allActionKey = req.path.substring(req.path.lastIndexOf('/') + 1);
+
+    // Check for router-level handler first
+    if (this.options.allActions && this.options.allActions[allActionKey]) {
+      this.logger.debug('Using router-level all action handler', { allActionKey });
+      try {
+        await this.options.allActions[allActionKey](req, res);
+        return;
+      } catch (err: any) {
+        this.logger.error('Error in router-level all action', { message: err?.message, stack: err?.stack });
+        res.status(500).json(err);
+        return;
+      }
+    }
+
+    // Fallback to library handler
     if (!libOptions.allActions) {
-      this.logger.error('Item Actions are not configured');
-      res.status(500).json({ error: 'Item Actions are not configured' });
+      this.logger.error('All Actions are not configured');
+      res.status(500).json({ error: 'All Actions are not configured' });
       return;
     }
     const allAction = libOptions.allActions[allActionKey];
     if (!allAction) {
       this.logger.error('All Action is not configured', { allActionKey });
-      res.status(500).json({ error: 'Item Action is not configured' });
+      res.status(500).json({ error: 'All Action is not configured' });
       return;
     }
     try {
@@ -104,15 +135,30 @@ export class ItemRouter<
     const libOperations = this.lib.operations;
     this.logger.debug('Getting All Facet', { query: req?.query, params: req?.params, locals: res?.locals });
     const facetKey = req.path.substring(req.path.lastIndexOf('/') + 1);
+
+    // Check for router-level handler first
+    if (this.options.allFacets && this.options.allFacets[facetKey]) {
+      this.logger.debug('Using router-level all facet handler', { facetKey });
+      try {
+        await this.options.allFacets[facetKey](req, res);
+        return;
+      } catch (err: any) {
+        this.logger.error('Error in router-level all facet', { message: err?.message, stack: err?.stack });
+        res.status(500).json(err);
+        return;
+      }
+    }
+
+    // Fallback to library handler
     if (!libOptions.allFacets) {
-      this.logger.error('Item Facets are not configured');
-      res.status(500).json({ error: 'Item Facets are not configured' });
+      this.logger.error('All Facets are not configured');
+      res.status(500).json({ error: 'All Facets are not configured' });
       return;
     }
     const facet = libOptions.allFacets[facetKey];
     if (!facet) {
-      this.logger.error('Item Facet is not configured', { facetKey });
-      res.status(500).json({ error: 'Item Facet is not configured' });
+      this.logger.error('All Facet is not configured', { facetKey });
+      res.status(500).json({ error: 'All Facet is not configured' });
       return;
     }
     try {
@@ -127,9 +173,24 @@ export class ItemRouter<
   protected postItemAction = async (req: Request, res: Response) => {
     const libOptions = this.lib.options;
     const libOperations = this.lib.operations;
-    this.logger.debug('Getting Item', { query: req?.query, params: req?.params, locals: res?.locals });
+    this.logger.debug('Posting Item Action', { query: req?.query, params: req?.params, locals: res?.locals });
     const ik = this.getIk(res);
     const actionKey = req.path.substring(req.path.lastIndexOf('/') + 1);
+
+    // Check for router-level handler first
+    if (this.options.actions && this.options.actions[actionKey]) {
+      this.logger.debug('Using router-level action handler', { actionKey });
+      try {
+        await this.options.actions[actionKey](req, res, ik);
+        return;
+      } catch (err: any) {
+        this.logger.error('Error in router-level action', { message: err?.message, stack: err?.stack });
+        res.status(500).json(err);
+        return;
+      }
+    }
+
+    // Fallback to library handler
     if (!libOptions.actions) {
       this.logger.error('Item Actions are not configured');
       res.status(500).json({ error: 'Item Actions are not configured' });
@@ -152,9 +213,24 @@ export class ItemRouter<
   protected getItemFacet = async (req: Request, res: Response) => {
     const libOptions = this.lib.options;
     const libOperations = this.lib.operations;
-    this.logger.debug('Getting Item', { query: req?.query, params: req?.params, locals: res?.locals });
+    this.logger.debug('Getting Item Facet', { query: req?.query, params: req?.params, locals: res?.locals });
     const ik = this.getIk(res);
     const facetKey = req.path.substring(req.path.lastIndexOf('/') + 1);
+
+    // Check for router-level handler first
+    if (this.options.facets && this.options.facets[facetKey]) {
+      this.logger.debug('Using router-level facet handler', { facetKey });
+      try {
+        await this.options.facets[facetKey](req, res, ik);
+        return;
+      } catch (err: any) {
+        this.logger.error('Error in router-level facet', { message: err?.message, stack: err?.stack });
+        res.status(500).json(err);
+        return;
+      }
+    }
+
+    // Fallback to library handler
     if (!libOptions.facets) {
       this.logger.error('Item Facets are not configured');
       res.status(500).json({ error: 'Item Facets are not configured' });

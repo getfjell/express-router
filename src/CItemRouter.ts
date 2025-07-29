@@ -25,7 +25,7 @@ export class CItemRouter<
     lib: Instance<T, S, L1, L2, L3, L4, L5>,
     type: S,
     parentRoute: ItemRouter<L1, L2, L3, L4, L5, never>,
-    options: ItemRouterOptions = {},
+    options: ItemRouterOptions<S, L1, L2, L3, L4, L5> = {},
   ) {
     super(lib as any, type, options);
     this.parentRoute = parentRoute;

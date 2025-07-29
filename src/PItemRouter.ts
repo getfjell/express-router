@@ -9,7 +9,7 @@ interface ParsedQuery {
 
 export class PItemRouter<T extends Item<S>, S extends string> extends ItemRouter<S> {
 
-  constructor(lib: Instance<T, S>, keyType: S, options: ItemRouterOptions = {}) {
+  constructor(lib: Instance<T, S>, keyType: S, options: ItemRouterOptions<S, never, never, never, never, never> = {}) {
     super(lib as any, keyType, options);
   }
 

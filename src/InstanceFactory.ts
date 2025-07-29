@@ -34,10 +34,10 @@ export const createInstanceFactory = <
   L4 extends string = never,
   L5 extends string = never
 >(
-  router: ItemRouter<S, L1, L2, L3, L4, L5>,
-  operations: Operations<V, S, L1, L2, L3, L4, L5>,
-  options?: Options<V, S, L1, L2, L3, L4, L5>
-): BaseInstanceFactory<S, L1, L2, L3, L4, L5> => {
+    router: ItemRouter<S, L1, L2, L3, L4, L5>,
+    operations: Operations<V, S, L1, L2, L3, L4, L5>,
+    options?: Options<V, S, L1, L2, L3, L4, L5>
+  ): BaseInstanceFactory<S, L1, L2, L3, L4, L5> => {
   return (coordinate: Coordinate<S, L1, L2, L3, L4, L5>, context: { registry: Registry, registryHub?: RegistryHub }) => {
     logger.debug("Creating express-router instance", { coordinate, registry: context.registry, router, operations, options });
 
