@@ -66,7 +66,7 @@ export class CItemRouter<
         itemToCreate, { locations: this.getLocations(res) }), this.getPkType()) as Item<S, L1, L2, L3, L4, L5>;
       item = await this.postCreateItem(item);
       this.logger.default('Created Item %j', item);
-      res.json(item);
+      res.status(201).json(item);
     } catch (err: any) {
       if (err instanceof NotFoundError) {
         this.logger.error('Item Not Found for Create', { message: err?.message, stack: err?.stack });

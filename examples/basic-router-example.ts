@@ -39,6 +39,10 @@ export interface Task extends Item<'task'> {
 const mockUserStorage = new Map<string, User>();
 const mockTaskStorage = new Map<string, Task>();
 
+// Counters for unique ID generation
+let userIdCounter = 1000;
+let taskIdCounter = 1000;
+
 // Initialize with some sample data
 const initializeSampleData = () => {
   const users: User[] = [
@@ -130,7 +134,7 @@ const createUserOperations = () => {
 
     async create(item: User) {
       console.log(`✨ UserOperations.create() - Creating user: ${item.name}`);
-      const id = `user-${Date.now().toString()}`;
+      const id = `user-${++userIdCounter}`;
       const newUser: User = {
         ...item,
         id,
@@ -170,7 +174,7 @@ const createUserOperations = () => {
         return false;
       }
       mockUserStorage.delete(String(key.pk));
-      return true;
+      return existing;
     },
 
     async find(finder: string, params: any) {
@@ -207,7 +211,7 @@ const createTaskOperations = () => {
 
     async create(item: Task) {
       console.log(`✨ TaskOperations.create() - Creating task: ${item.title}`);
-      const id = `task-${Date.now().toString()}`;
+      const id = `task-${++taskIdCounter}`;
       const newTask: Task = {
         ...item,
         id,
@@ -247,7 +251,7 @@ const createTaskOperations = () => {
         return false;
       }
       mockTaskStorage.delete(String(key.pk));
-      return true;
+      return existing;
     },
 
     async find(finder: string, params: any) {
