@@ -20,16 +20,13 @@ export class CItemRouter<
   L5 extends string = never
 > extends ItemRouter<S, L1, L2, L3, L4, L5> {
 
-  private parentRoute: ItemRouter<L1, L2, L3, L4, L5, never>;
-
   constructor(
     lib: Instance<T, S, L1, L2, L3, L4, L5>,
     type: S,
     parentRoute: ItemRouter<L1, L2, L3, L4, L5, never>,
     options: ItemRouterOptions<S, L1, L2, L3, L4, L5> = {},
   ) {
-    super(lib as any, type, options);
-    this.parentRoute = parentRoute;
+    super(lib as any, type, options, parentRoute);
   }
 
   public hasParent(): boolean {
@@ -49,12 +46,12 @@ export class CItemRouter<
      * bubble all the way up to the root Primary.
      */
     let lka: LocKey<S | L1 | L2 | L3 | L4>[] = [this.getLk(res)];
-    lka = lka.concat(this.parentRoute.getLKA(res) as LocKey<S | L1 | L2 | L3 | L4>[]);
+    lka = lka.concat(this.parentRoute!.getLKA(res) as LocKey<S | L1 | L2 | L3 | L4>[]);
     return lka as LocKeyArray<S, L1, L2, L3, L4>;
   }
 
   public getLocations(res: Response): LocKeyArray<L1, L2, L3, L4, L5> {
-    return this.parentRoute.getLKA(res) as LocKeyArray<L1, L2, L3, L4, L5>;
+    return this.parentRoute!.getLKA(res) as LocKeyArray<L1, L2, L3, L4, L5>;
   }
 
   protected createItem = async (req: Request, res: Response) => {
