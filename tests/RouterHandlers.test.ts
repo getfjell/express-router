@@ -278,8 +278,7 @@ describe('Router Handlers', () => {
 
       expect(userRouter.getOptions().allActions?.bulkActivate).toHaveBeenCalledWith(
         {},
-        // eslint-disable-next-line no-undefined
-        [{ kt: 'user', lk: undefined }],
+        [],
         { req, res: mockRes }
       );
       expect(mockUserOperations.allAction).not.toHaveBeenCalled();
@@ -304,8 +303,7 @@ describe('Router Handlers', () => {
 
       expect(userRouter.getOptions().allFacets?.userStats).toHaveBeenCalledWith(
         {},
-        // eslint-disable-next-line no-undefined
-        [{ kt: 'user', lk: undefined }],
+        [],
         { req, res: mockRes }
       );
       expect(mockUserOperations.allFacet).not.toHaveBeenCalled();
@@ -388,7 +386,7 @@ describe('Router Handlers', () => {
 
       expect(postRouter.getOptions().allActions?.bulkPublish).toHaveBeenCalledWith(
         {},
-        [{ kt: 'post', lk: 'post_456' }, { kt: 'user', lk: 'user_123' }],
+        [{ kt: 'user', lk: 'user_123' }],
         { req, res: mockRes }
       );
       expect(mockPostOperations.allAction).not.toHaveBeenCalled();
@@ -413,7 +411,7 @@ describe('Router Handlers', () => {
 
       expect(postRouter.getOptions().allFacets?.postStats).toHaveBeenCalledWith(
         {},
-        [{ kt: 'post', lk: 'post_456' }, { kt: 'user', lk: 'user_123' }],
+        [{ kt: 'user', lk: 'user_123' }],
         { req, res: mockRes }
       );
       expect(mockPostOperations.allFacet).not.toHaveBeenCalled();

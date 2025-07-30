@@ -135,15 +135,18 @@ export class ItemRouter<
   protected options: ItemRouterOptions<S, L1, L2, L3, L4, L5>;
   private childRouters: Record<string, Router> = {};
   protected logger;
+  protected parentRoute?: ItemRouter<L1, L2, L3, L4, L5, never>;
 
   constructor(
     lib: Instance<Item<S, L1, L2, L3, L4, L5>, S, L1, L2, L3, L4, L5>,
     keyType: S,
-    options: ItemRouterOptions<S, L1, L2, L3, L4, L5> = {}
+    options: ItemRouterOptions<S, L1, L2, L3, L4, L5> = {},
+    parentRoute?: ItemRouter<L1, L2, L3, L4, L5, never>
   ) {
     this.lib = lib;
     this.keyType = keyType;
     this.options = options;
+    this.parentRoute = parentRoute;
     this.logger = LibLogger.get("ItemRouter", keyType);
   }
 
@@ -169,11 +172,9 @@ export class ItemRouter<
   }
 
   // Unless this is a contained router, the locations will always be an empty array.
-  /* eslint-disable */
   protected getLocations(res: Response): LocKeyArray<L1, L2, L3, L4, L5> | [] {
-    throw new Error('Method not implemented in an abstract router');
+    return this.parentRoute ? this.parentRoute.getLKA(res) as LocKeyArray<L1, L2, L3, L4, L5> : [];
   }
-  /* eslint-enable */
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   protected getIk(res: Response): PriKey<S> | ComKey<S, L1, L2, L3, L4, L5> {
@@ -192,7 +193,7 @@ export class ItemRouter<
       try {
         const result = await this.options.allActions[allActionKey](
           req.body as Record<string, string | number | boolean | Date | Array<string | number | boolean | Date>>,
-          this.getLKA(res) as LocKeyArray<L1, L2, L3, L4, L5> | [],
+          this.getLocations(res),
           { req, res }
         );
         if (result != null) res.json(result);
@@ -236,7 +237,7 @@ export class ItemRouter<
       try {
         const result = await this.options.allFacets[facetKey](
           req.query as Record<string, string | number | boolean | Date | Array<string | number | boolean | Date>>,
-          this.getLKA(res) as LocKeyArray<L1, L2, L3, L4, L5> | [],
+          this.getLocations(res),
           { req, res }
         );
         if (result != null) res.json(result);
