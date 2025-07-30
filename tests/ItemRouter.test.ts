@@ -411,11 +411,10 @@ describe("ItemRouter", () => {
       expect(lka).toEqual([{ kt: "test", lk: "1-1-1-1-1" }]);
     });
 
-    it('should throw an error if getLocations is not implemented', () => {
+    it('should return empty array when no parent route exists', () => {
       const abstractRouter = new ItemRouter(lib, "test");
-      expect(() =>
-        abstractRouter['getLocations'](res as Response)
-      ).toThrow('Method not implemented in an abstract router');
+      const result = abstractRouter['getLocations'](res as Response);
+      expect(result).toEqual([]);
     });
 
     it('should throw an error if getIk is not implemented', () => {
@@ -1022,7 +1021,7 @@ describe("ItemRouter", () => {
   describe('Edge cases and parameter validation', () => {
     it('should handle special characters in primary key validation', () => {
       const specialChars = ['!@#$%', '测试', '🚀', 'space test', 'tab\ttest'];
-      
+
       specialChars.forEach(pkValue => {
         const isValid = router["validatePKParam"](pkValue);
         expect(isValid).toBe(true); // All should be valid as long as they're not empty or "undefined"
@@ -1031,7 +1030,7 @@ describe("ItemRouter", () => {
 
     it('should handle whitespace-only primary key parameter', () => {
       const whitespaceKeys = [' ', '\t', '\n', '   ', '\t\n '];
-      
+
       whitespaceKeys.forEach(pkValue => {
         const isValid = router["validatePKParam"](pkValue);
         expect(isValid).toBe(true); // Whitespace is considered valid
@@ -1052,7 +1051,7 @@ describe("ItemRouter", () => {
         const expectedAction = path.substring(path.lastIndexOf('/') + 1);
         // @ts-ignore
         req.path = path;
-        
+
         // This tests the path extraction logic used in postItemAction
         const extractedAction = req.path.substring(req.path.lastIndexOf('/') + 1);
         expect(extractedAction).toBe(expectedAction);
@@ -1145,7 +1144,7 @@ describe("ItemRouter", () => {
       };
       const routerWithEmptyOptions = new TestItemRouter(libWithEmptyOptions as any, "test", {});
       const expressRouter = Router();
-      
+
       // Should not throw when configuring with empty options
       expect(() => {
         routerWithEmptyOptions['configure'](expressRouter);
@@ -1162,7 +1161,7 @@ describe("ItemRouter", () => {
       };
       const routerWithPartialLib = new TestItemRouter(libWithPartialOptions as any, "test");
       const expressRouter = Router();
-      
+
       expect(() => {
         routerWithPartialLib['configure'](expressRouter);
       }).not.toThrow();
@@ -1188,7 +1187,7 @@ describe("ItemRouter", () => {
       // @ts-ignore
       req.path = '/test/123/nonExistentAction';
       await router['postItemAction'](req as Request, res as Response);
-      
+
       expect(res.status).toHaveBeenCalledWith(500);
       expect(res.json).toHaveBeenCalledWith({ error: 'Item Action is not configured' });
     });
@@ -1197,7 +1196,7 @@ describe("ItemRouter", () => {
       // @ts-ignore
       req.path = '/test/123/nonExistentFacet';
       await router['getItemFacet'](req as Request, res as Response);
-      
+
       expect(res.status).toHaveBeenCalledWith(500);
       expect(res.json).toHaveBeenCalledWith({ error: 'Item Facet is not configured' });
     });
@@ -1206,7 +1205,7 @@ describe("ItemRouter", () => {
   describe('Abstract method coverage', () => {
     it('should throw error when calling createItem on abstract router', async () => {
       const abstractRouter = new ItemRouter(lib, "test");
-      
+
       await expect(async () => {
         await abstractRouter['createItem'](req as Request, res as Response);
       }).rejects.toThrow('Method not implemented in an abstract router');
@@ -1214,7 +1213,7 @@ describe("ItemRouter", () => {
 
     it('should throw error when calling findItems on abstract router', async () => {
       const abstractRouter = new ItemRouter(lib, "test");
-      
+
       await expect(async () => {
         await abstractRouter['findItems'](req as Request, res as Response);
       }).rejects.toThrow('Method not implemented in an abstract router');
@@ -1233,7 +1232,7 @@ describe("ItemRouter", () => {
       } as any;
 
       const convertedItem = router["convertDates"](itemWithInvalidDates);
-      
+
       // Non-empty strings should result in Date objects (potentially Invalid Date)
       expect(convertedItem.events?.created.at).toBeInstanceOf(Date);
       expect(convertedItem.events?.updated.at).toBeInstanceOf(Date);
@@ -1261,7 +1260,7 @@ describe("ItemRouter", () => {
       } as any;
 
       const convertedItem = router["convertDates"](itemWithComplexEvents);
-      
+
       expect(convertedItem.events?.created.at).toBeInstanceOf(Date);
       expect((convertedItem.events?.created as any).by).toBe("user123");
       expect((convertedItem.events?.created as any).metadata).toEqual({ source: "api" });
@@ -1288,7 +1287,7 @@ describe("ItemRouter", () => {
 
       const expressRouter = Router();
       router["configureChildRouters"](expressRouter, router["childRouters"]);
-      
+
       expect(expressRouter.stack).toHaveLength(3);
     });
   });
