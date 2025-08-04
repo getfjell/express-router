@@ -292,7 +292,8 @@ describe('Router Handlers', () => {
 
       expect(mockUserOperations.allAction).toHaveBeenCalledWith(
         'someOtherAllAction',
-        {}
+        {},
+        []
       );
     });
 
@@ -317,7 +318,8 @@ describe('Router Handlers', () => {
 
       expect(mockUserOperations.allFacet).toHaveBeenCalledWith(
         'someOtherAllFacet',
-        {}
+        {},
+        []
       );
     });
   });
@@ -400,7 +402,8 @@ describe('Router Handlers', () => {
 
       expect(mockPostOperations.allAction).toHaveBeenCalledWith(
         'someOtherAllAction',
-        {}
+        {},
+        [{ kt: "user", lk: "user_123" }]
       );
     });
 
@@ -425,7 +428,8 @@ describe('Router Handlers', () => {
 
       expect(mockPostOperations.allFacet).toHaveBeenCalledWith(
         'someOtherAllFacet',
-        {}
+        {},
+        [{ kt: "user", lk: "user_123" }]
       );
     });
   });
