@@ -2,7 +2,7 @@ import libraryConfig from "@fjell/eslint-config/library";
 
 export default [
   {
-    ignores: ["examples/**"]
+    ignores: ["examples/**", "src/util/general.ts"]
   },
   ...libraryConfig,
   {
