@@ -218,7 +218,7 @@ export class ItemRouter<
       return;
     }
     try {
-      res.json(await libOperations.allAction(allActionKey, req.body));
+      res.json(await libOperations.allAction(allActionKey, req.body, this.getLocations(res)));
     } catch (err: any) {
       this.logger.error('Error in All Action', { message: err?.message, stack: err?.stack });
       res.status(500).json(err);
@@ -263,7 +263,7 @@ export class ItemRouter<
     }
     try {
       const combinedQueryParams = { ...req.query, ...req.params } as Record<string, string | number | boolean | Date | Array<string | number | boolean | Date>>;
-      res.json(await libOperations.allFacet(facetKey, combinedQueryParams));
+      res.json(await libOperations.allFacet(facetKey, combinedQueryParams, this.getLocations(res)));
     } catch (err: any) {
       this.logger.error('Error in All Facet', { message: err?.message, stack: err?.stack });
       res.status(500).json(err);
@@ -490,7 +490,7 @@ export class ItemRouter<
       next();
     } else {
       this.logger.error('Invalid Primary Key', { pkParamValue, path: req?.originalUrl });
-      res.status(500).json({ error: 'Invalid Primary Key', path: req?.originalUrl });
+      res.status(400).json({ error: 'Invalid Primary Key', path: req?.originalUrl });
     }
   }
 
@@ -612,8 +612,8 @@ export class ItemRouter<
   };
 
   public convertDates = (item: Partial<Item<S, L1, L2, L3, L4, L5>>): Partial<Item<S, L1, L2, L3, L4, L5>> => {
-    const events = item.events as Record<string, ItemEvent>;
     this.logger.debug('Converting Dates', { item });
+    const events = item.events as Record<string, ItemEvent> | undefined;
     if (events) {
       Object.keys(events).forEach((key: string) => {
         Object.assign(events, {

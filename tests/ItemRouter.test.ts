@@ -230,7 +230,7 @@ describe("ItemRouter", () => {
     const next = vi.fn();
     req.params = { testPk: "undefined" };
     router["validatePrimaryKeyValue"](req as Request, res as Response, next);
-    expect(res.status).toHaveBeenCalledWith(500);
+    expect(res.status).toHaveBeenCalledWith(400);
     expect(res.json).toHaveBeenCalledWith({ error: "Invalid Primary Key", path: req.originalUrl });
   });
 
@@ -565,7 +565,7 @@ describe("ItemRouter", () => {
       // @ts-ignore
       req.path = '/test/customAllAction';
       await router['postAllAction'](req as Request, res as Response);
-      expect(lib.operations.allAction).toHaveBeenCalledWith('customAllAction', req.body);
+      expect(lib.operations.allAction).toHaveBeenCalledWith('customAllAction', req.body, locKeyArray);
       expect(res.json).toHaveBeenCalledWith({ allAction: true, ...testItem });
     });
 
@@ -628,7 +628,7 @@ describe("ItemRouter", () => {
       // @ts-ignore
       req.path = '/test/customAllFacet';
       await router['getAllFacet'](req as Request, res as Response);
-      expect(lib.operations.allFacet).toHaveBeenCalledWith('customAllFacet', { ...req.query, ...req.params });
+      expect(lib.operations.allFacet).toHaveBeenCalledWith('customAllFacet', { ...req.query, ...req.params }, locKeyArray);
       expect(res.json).toHaveBeenCalledWith({ facet: "customAllFacet", data: testItem });
     });
 
@@ -691,7 +691,7 @@ describe("ItemRouter", () => {
       // @ts-ignore
       req.path = '/test/customAllFacet';
       await router['getAllFacet'](req as Request, res as Response);
-      expect(lib.operations.allFacet).toHaveBeenCalledWith('customAllFacet', {});
+      expect(lib.operations.allFacet).toHaveBeenCalledWith('customAllFacet', {}, locKeyArray);
     });
 
     it('should combine query and params with params overriding query', async () => {
@@ -700,7 +700,7 @@ describe("ItemRouter", () => {
       // @ts-ignore
       req.path = '/test/customAllFacet';
       await router['getAllFacet'](req as Request, res as Response);
-      expect(lib.operations.allFacet).toHaveBeenCalledWith('customAllFacet', { a: '1', b: '3', c: '4' });
+      expect(lib.operations.allFacet).toHaveBeenCalledWith('customAllFacet', { a: '1', b: '3', c: '4' }, locKeyArray);
     });
   });
 
@@ -1109,7 +1109,7 @@ describe("ItemRouter", () => {
 
       await router['getAllFacet'](req as Request, res as Response);
 
-      expect(lib.operations.allFacet).toHaveBeenCalledWith('customAllFacet', req.query);
+      expect(lib.operations.allFacet).toHaveBeenCalledWith('customAllFacet', req.query, locKeyArray);
     });
 
     it('should handle nested objects in request body for actions', async () => {
