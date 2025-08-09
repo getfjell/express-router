@@ -1,10 +1,9 @@
 import {
   ComKey, Item, ItemQuery, LocKey, LocKeyArray, paramsToQuery, PriKey, QueryParams, validatePK
 } from "@fjell/core";
-import { NotFoundError } from "@fjell/lib";
+import { Library, NotFoundError } from "@fjell/lib";
 import { Request, Response } from "express";
 import { ItemRouter, ItemRouterOptions } from "./ItemRouter.js";
-import { Instance } from "./Instance.js";
 
 interface ParsedQuery {
   [key: string]: undefined | string | string[] | ParsedQuery | ParsedQuery[];
@@ -21,7 +20,7 @@ export class CItemRouter<
 > extends ItemRouter<S, L1, L2, L3, L4, L5> {
 
   constructor(
-    lib: Instance<T, S, L1, L2, L3, L4, L5>,
+    lib: Library<T, S, L1, L2, L3, L4, L5>,
     type: S,
     parentRoute: ItemRouter<L1, L2, L3, L4, L5, never>,
     options: ItemRouterOptions<S, L1, L2, L3, L4, L5> = {},
