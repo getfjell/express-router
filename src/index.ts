@@ -6,3 +6,4 @@ export * from "./PItemRouter.js";
 export * from './Instance.js';
 export * from './InstanceFactory.js';
 export * from './Registry.js';
+export type { Operations } from './Operations.js';

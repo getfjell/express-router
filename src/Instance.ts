@@ -1,7 +1,8 @@
 import LibLogger from "./logger.js";
 import { Item } from "@fjell/core";
 import { Instance as BaseInstance, Coordinate, createInstance as createBaseInstance, Registry } from "@fjell/registry";
-import { Operations, Options } from "@fjell/lib";
+import type { Operations } from "./Operations.js";
+import { Options } from "@fjell/lib";
 import { ItemRouter } from "./ItemRouter.js";
 
 const logger = LibLogger.get("Instance");
