@@ -5,7 +5,8 @@ import { createInstance } from '../src/Instance';
 import { ItemRouter } from '../src/ItemRouter';
 import { Item } from '@fjell/core';
 import { Coordinate, Registry, RegistryHub } from '@fjell/registry';
-import { Operations, Options } from '@fjell/lib';
+import type { Operations } from '../src/Operations';
+import { Options } from '@fjell/lib';
 
 // Mock the logger
 vi.mock('../src/logger', () => ({
