@@ -85,11 +85,21 @@ export class PItemRouter<T extends Item<S>, S extends string> extends ItemRouter
       // If finder is defined?  Call a finder.
       this.logger.default('Finding Items with Finder %s %j one:%s', finder, finderParams, one);
 
-      if (one === 'true') {
-        const item = await (this.lib as any).findOne(finder, JSON.parse(finderParams));
-        items = item ? [item] : [];
-      } else {
-        items = await libOperations.find(finder, JSON.parse(finderParams));
+      try {
+        const parsedParams = finderParams ? JSON.parse(finderParams) : {};
+        if (one === 'true') {
+          const item = await (this.lib as any).findOne(finder, parsedParams);
+          items = item ? [item] : [];
+        } else {
+          items = await libOperations.find(finder, parsedParams);
+        }
+      } catch (parseError: any) {
+        this.logger.error('Error parsing finderParams JSON', { finder, finderParams, error: parseError.message });
+        res.status(400).json({
+          error: 'Invalid JSON in finderParams',
+          message: parseError.message
+        });
+        return;
       }
     } else {
       // TODO: This is once of the more important places to perform some validaation and feedback

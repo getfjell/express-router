@@ -34,6 +34,8 @@ export const stringifyJSON = function (obj: any, visited: Set<any> = new Set()):
       obj.forEach(function (el) {
         arrVals.push(stringifyJSON(el, visited));
       });
+      // Remove array from visited after processing to prevent memory leaks
+      visited.delete(obj);
       return '[' + arrVals + ']';
     }
   }
@@ -59,6 +61,8 @@ export const stringifyJSON = function (obj: any, visited: Set<any> = new Set()):
         arrOfKeyVals.push(keyOut + stringifyJSON(keyValOut, visited));
       }
     });
+    // Remove object from visited after processing to prevent memory leaks
+    visited.delete(obj);
     return '{' + arrOfKeyVals + '}';
   }
   return '';

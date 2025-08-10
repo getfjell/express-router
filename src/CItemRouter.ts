@@ -91,11 +91,21 @@ export class CItemRouter<
       // If finder is defined?  Call a finder.
       this.logger.default('Finding Items with Finder', { finder, finderParams, one });
 
-      if (one === 'true') {
-        const item = await (this.lib as any).findOne(finder, JSON.parse(finderParams), this.getLocations(res));
-        items = item ? [item] : [];
-      } else {
-        items = await libOperations.find(finder, JSON.parse(finderParams), this.getLocations(res));
+      try {
+        const parsedParams = finderParams ? JSON.parse(finderParams) : {};
+        if (one === 'true') {
+          const item = await (this.lib as any).findOne(finder, parsedParams, this.getLocations(res));
+          items = item ? [item] : [];
+        } else {
+          items = await libOperations.find(finder, parsedParams, this.getLocations(res));
+        }
+      } catch (parseError: any) {
+        this.logger.error('Error parsing finderParams JSON', { finder, finderParams, error: parseError.message });
+        res.status(400).json({
+          error: 'Invalid JSON in finderParams',
+          message: parseError.message
+        });
+        return;
       }
     } else {
       // TODO: This is once of the more important places to perform some validaation and feedback

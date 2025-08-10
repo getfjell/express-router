@@ -585,7 +585,7 @@ export const runNestedRouterExample = async (): Promise<{ app: Application }> =>
 };
 
 // If this file is run directly, start the server
-if (require.main === module) {
+if (import.meta.url === `file://${process.argv[1]}`) {
   runNestedRouterExample().then(({ app }) => {
     const PORT = process.env.PORT || 3002;
     app.listen(PORT, () => {
