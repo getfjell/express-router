@@ -1,7 +1,8 @@
 import { Item } from "@fjell/core";
 import { ItemRouter } from "./ItemRouter.js";
 import { InstanceFactory as BaseInstanceFactory, Registry, RegistryHub } from "@fjell/registry";
-import { Operations, Options } from "@fjell/lib";
+import type { Operations } from "./Operations.js";
+import { Options } from "@fjell/lib";
 import { createInstance, Instance } from "./Instance.js";
 import { Coordinate } from "@fjell/registry";
 import LibLogger from "./logger.js";

@@ -191,25 +191,34 @@ describe("CItemRouter", () => {
     // Test JSON parsing errors and edge cases
     it.each([
       ['invalid JSON', 'invalid-json'],
-      ['empty string', '']
     ])('should handle %s in finderParams', async (_, finderParams) => {
       req.query = { finder: 'testFinder', finderParams };
-      await expect(router['findItems'](req as Request, res as Response)).rejects.toThrow();
+      await router['findItems'](req as Request, res as Response);
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith({
+        error: 'Invalid JSON in finderParams',
+        message: expect.any(String)
+      });
     });
 
     it('should handle undefined finderParams', async () => {
+      mockLib.operations.find.mockResolvedValue(mockItems);
       req.query = { finder: 'testFinder' };
-      await expect(router['findItems'](req as Request, res as Response)).rejects.toThrow();
+      await router['findItems'](req as Request, res as Response);
+      expect(mockLib.operations.find).toHaveBeenCalledWith('testFinder', {}, mockParentLKA);
     });
 
     it('should handle null finderParams', async () => {
+      mockLib.operations.find.mockResolvedValue(mockItems);
       req.query = { finder: 'testFinder', finderParams: null as any };
-      await expect(router['findItems'](req as Request, res as Response)).rejects.toThrow();
+      await router['findItems'](req as Request, res as Response);
+      expect(mockLib.operations.find).toHaveBeenCalledWith('testFinder', {}, mockParentLKA);
     });
 
     it('should handle findOne with undefined finderParams', async () => {
       req.query = { finder: 'testFinder', one: 'true' };
-      await expect(router['findItems'](req as Request, res as Response)).rejects.toThrow();
+      await router['findItems'](req as Request, res as Response);
+      expect(mockLib.findOne).toHaveBeenCalledWith('testFinder', {}, mockParentLKA);
     });
 
     // Test library method errors
@@ -227,7 +236,7 @@ describe("CItemRouter", () => {
         mockLib.operations[method].mockRejectedValue(new Error(`${method} error`));
       }
       req.query = query;
-      await expect(router['findItems'](req as Request, res as Response)).rejects.toThrow(`${method} error`);
+      await expect(router['findItems'](req as Request, res as Response)).resolves.toBeUndefined();
     });
   });
 

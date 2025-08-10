@@ -1,25 +1,6 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
-// Mock @fjell/logging before any imports
-const mockLogger = {
-  debug: vi.fn(),
-  error: vi.fn(),
-  warning: vi.fn(),
-  info: vi.fn(),
-  default: vi.fn(),
-  trace: vi.fn(),
-  emergency: vi.fn(),
-  alert: vi.fn(),
-  critical: vi.fn(),
-  notice: vi.fn(),
-  time: vi.fn().mockReturnThis(),
-};
-
-vi.mock('@fjell/logging', () => ({
-  default: {
-    getLogger: vi.fn().mockReturnValue(mockLogger)
-  }
-}));
+// Note: @fjell/logging is mocked globally in setup.ts
 
 // Import after mocking to ensure the module is loaded with mocks in place
 import LibLogger from '../src/logger';

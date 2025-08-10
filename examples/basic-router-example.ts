@@ -376,7 +376,7 @@ export const runBasicRouterExample = async (): Promise<{ app: Application; userR
 };
 
 // If this file is run directly, start the server
-if (require.main === module) {
+if (import.meta.url === `file://${process.argv[1]}`) {
   runBasicRouterExample().then(({ app }) => {
     const PORT = process.env.PORT || 3001;
     app.listen(PORT, () => {

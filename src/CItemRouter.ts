@@ -1,10 +1,9 @@
 import {
   ComKey, Item, ItemQuery, LocKey, LocKeyArray, paramsToQuery, PriKey, QueryParams, validatePK
 } from "@fjell/core";
-import { NotFoundError } from "@fjell/lib";
+import { Library, NotFoundError } from "@fjell/lib";
 import { Request, Response } from "express";
 import { ItemRouter, ItemRouterOptions } from "./ItemRouter.js";
-import { Instance } from "./Instance.js";
 
 interface ParsedQuery {
   [key: string]: undefined | string | string[] | ParsedQuery | ParsedQuery[];
@@ -21,7 +20,7 @@ export class CItemRouter<
 > extends ItemRouter<S, L1, L2, L3, L4, L5> {
 
   constructor(
-    lib: Instance<T, S, L1, L2, L3, L4, L5>,
+    lib: Library<T, S, L1, L2, L3, L4, L5>,
     type: S,
     parentRoute: ItemRouter<L1, L2, L3, L4, L5, never>,
     options: ItemRouterOptions<S, L1, L2, L3, L4, L5> = {},
@@ -92,11 +91,21 @@ export class CItemRouter<
       // If finder is defined?  Call a finder.
       this.logger.default('Finding Items with Finder', { finder, finderParams, one });
 
-      if (one === 'true') {
-        const item = await (this.lib as any).findOne(finder, JSON.parse(finderParams), this.getLocations(res));
-        items = item ? [item] : [];
-      } else {
-        items = await libOperations.find(finder, JSON.parse(finderParams), this.getLocations(res));
+      try {
+        const parsedParams = finderParams ? JSON.parse(finderParams) : {};
+        if (one === 'true') {
+          const item = await (this.lib as any).findOne(finder, parsedParams, this.getLocations(res));
+          items = item ? [item] : [];
+        } else {
+          items = await libOperations.find(finder, parsedParams, this.getLocations(res));
+        }
+      } catch (parseError: any) {
+        this.logger.error('Error parsing finderParams JSON', { finder, finderParams, error: parseError.message });
+        res.status(400).json({
+          error: 'Invalid JSON in finderParams',
+          message: parseError.message
+        });
+        return;
       }
     } else {
       // TODO: This is once of the more important places to perform some validaation and feedback

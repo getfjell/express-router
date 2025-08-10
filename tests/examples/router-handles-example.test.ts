@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { app, postRouter, userRouter } from '../../examples/router-handlers-example';
 import request from 'supertest';
+// Performance tracking removed - was unused
 
 // Mock express types for testing - using any to avoid strict typing issues
 const createMockRequest = (overrides: any = {}): any => ({
@@ -580,6 +581,459 @@ describe('Router Handlers Example', () => {
 
       expect(result.message).toBe('Bulk publish via router handler');
       expect(result.processedPosts).toBe(0);
+    });
+  });
+
+  describe('HTTP Endpoint Integration Tests', () => {
+    it('should handle user activate action via HTTP', async () => {
+      const response = await request(app)
+        .post('/api/users/user_1/activate')
+        .send({ reason: 'automated test' })
+        .expect(200);
+
+      expect(response.body.message).toBe('User activated via router handler');
+      expect(response.body.userId).toBe('user_1');
+      expect(response.body.emailSent).toBe(true);
+      expect(response.body.timestamp).toBeDefined();
+    });
+
+    it('should handle user deactivate action via HTTP', async () => {
+      const response = await request(app)
+        .post('/api/users/user_1/deactivate')
+        .send({ reason: 'security concern' })
+        .expect(200);
+
+      expect(response.body.message).toBe('User deactivated via router handler');
+      expect(response.body.userId).toBe('user_1');
+      expect(response.body.notificationSent).toBe(true);
+    });
+
+    it('should handle user profile facet via HTTP', async () => {
+      const response = await request(app)
+        .get('/api/users/user_1/profile')
+        .query({ includeExtended: 'true' })
+        .expect(200);
+
+      expect(response.body.userId).toBe('user_1');
+      expect(response.body.basicInfo.name).toBe('John Doe');
+      expect(response.body.extendedInfo.preferences.theme).toBe('dark');
+    });
+
+    it('should handle user stats facet via HTTP', async () => {
+      const response = await request(app)
+        .get('/api/users/user_1/stats')
+        .query({ period: 'monthly' })
+        .expect(200);
+
+      expect(response.body.userId).toBe('user_1');
+      expect(response.body.postsCount).toBe(25);
+      expect(response.body.commentsCount).toBe(150);
+    });
+
+    it('should handle user bulk actions via HTTP', async () => {
+      const response = await request(app)
+        .post('/api/users/bulkActivate')
+        .send({ userIds: ['user_1', 'user_2', 'user_3'] })
+        .expect(200);
+
+      expect(response.body.message).toBe('Bulk activation via router handler');
+      expect(response.body.processedUsers).toBe(3);
+      expect(response.body.externalServiceCalled).toBe(true);
+    });
+
+    it('should handle user all facets via HTTP', async () => {
+      const response = await request(app)
+        .get('/api/users/userStats')
+        .query({ includeDetails: 'true' })
+        .expect(200);
+
+      expect(response.body.totalUsers).toBe(1250);
+      expect(response.body.activeUsers).toBe(890);
+      expect(response.body.systemHealth).toBe('excellent');
+    });
+
+    it('should handle post publish action via HTTP', async () => {
+      const response = await request(app)
+        .post('/api/posts/post_1/publish')
+        .send({ platforms: ['twitter', 'facebook'] })
+        .expect(200);
+
+      expect(response.body.message).toBe('Post published via router handler');
+      expect(response.body.postId).toBe('post_1');
+      expect(response.body.socialMediaPosted).toBe(true);
+    });
+
+    it('should handle post analytics facet via HTTP', async () => {
+      const response = await request(app)
+        .get('/api/posts/post_1/analytics')
+        .query({ timeframe: '30days' })
+        .expect(200);
+
+      expect(response.body.postId).toBe('post_1');
+      expect(response.body.views).toBe(1250);
+      expect(response.body.engagementRate).toBe(0.12);
+    });
+
+    it('should handle post bulk operations via HTTP', async () => {
+      const response = await request(app)
+        .post('/api/posts/bulkPublish')
+        .send({ postIds: ['post_1', 'post_2'] })
+        .expect(200);
+
+      expect(response.body.message).toBe('Bulk publish via router handler');
+      expect(response.body.processedPosts).toBe(2);
+      expect(response.body.platformsUpdated).toContain('twitter');
+    });
+  });
+
+  describe('Library Fallback Behavior', () => {
+    it('should return 404 for undefined router actions that are not in library', async () => {
+      // Testing an action that doesn't exist in either router handlers or library
+      const response = await request(app)
+        .post('/api/users/user_1/undefinedAction')
+        .send({ testData: 'fallback test' })
+        .expect(404);
+
+      // Route not found - Express returns 404 for non-existent routes
+      expect(response.text).toContain('Cannot POST /api/users/user_1/undefinedAction');
+    });
+
+    it('should return 404 for undefined router facets that are not in library', async () => {
+      const response = await request(app)
+        .get('/api/users/user_1/undefinedFacet')
+        .query({ testParam: 'fallback test' })
+        .expect(404);
+
+      expect(response.text).toContain('Cannot GET /api/users/user_1/undefinedFacet');
+    });
+
+    it('should return 404 for undefined all actions that are not in library', async () => {
+      const response = await request(app)
+        .post('/api/users/undefinedAllAction')
+        .send({ testData: 'fallback test' })
+        .expect(404);
+
+      expect(response.text).toContain('Cannot POST /api/users/undefinedAllAction');
+    });
+
+    it('should return 500 for undefined all facets that access the item endpoint', async () => {
+      const response = await request(app)
+        .get('/api/users/undefinedAllFacet')
+        .query({ testParam: 'fallback test' })
+        .expect(500);
+
+      // This endpoint exists but fails at validation because undefinedAllFacet becomes an item ID
+      expect(response.body).toBeDefined();
+    });
+
+    it('should return 404 for undefined post actions that are not in library', async () => {
+      const response = await request(app)
+        .post('/api/posts/post_1/undefinedPostAction')
+        .send({ testData: 'fallback test' })
+        .expect(404);
+
+      expect(response.text).toContain('Cannot POST /api/posts/post_1/undefinedPostAction');
+    });
+  });
+
+  describe('Error Handling and Validation', () => {
+    it('should handle malformed JSON in request body', async () => {
+      const response = await request(app)
+        .post('/api/users/user_1/activate')
+        .set('Content-Type', 'application/json')
+        .send('{ invalid json }')
+        .expect(400);
+
+      expect(response.body).toBeDefined();
+    });
+
+    it('should handle missing required parameters gracefully', async () => {
+      const response = await request(app)
+        .post('/api/users/user_1/activate')
+        .send({}) // Empty body
+        .expect(200);
+
+      // Router handler should still work with empty params
+      expect(response.body.message).toBe('User activated via router handler');
+      expect(response.body.userId).toBe('user_1');
+    });
+
+    it('should handle invalid user ID format', async () => {
+      const response = await request(app)
+        .get('/api/users/invalid@user#id/profile')
+        .expect(500);
+
+      // Should return error for invalid ID format due to validation
+      expect(response.body).toBeDefined();
+    });
+
+    it('should handle very long request payloads', async () => {
+      const largePayload = {
+        userIds: Array.from({ length: 1000 }, (_, i) => `user_${i}`),
+        metadata: 'x'.repeat(10000) // Large string
+      };
+
+      const response = await request(app)
+        .post('/api/users/bulkActivate')
+        .send(largePayload)
+        .expect(200);
+
+      expect(response.body.processedUsers).toBe(1000);
+    });
+
+    it('should handle special characters in query parameters', async () => {
+      const response = await request(app)
+        .get('/api/users/user_1/stats')
+        .query({
+          period: 'monthly',
+          filter: 'name="Test User" & status=active',
+          unicode: '测试用户'
+        })
+        .expect(200);
+
+      expect(response.body.userId).toBe('user_1');
+    });
+
+    it('should handle concurrent requests to the same handler', async () => {
+      const promises = Array.from({ length: 10 }, () =>
+        request(app)
+          .post('/api/users/user_1/activate')
+          .send({ concurrentTest: true })
+      );
+
+      const responses = await Promise.all(promises);
+
+      responses.forEach(response => {
+        expect(response.status).toBe(200);
+        expect(response.body.message).toBe('User activated via router handler');
+      });
+    });
+  });
+
+  describe('Performance and Memory Tests', () => {
+    it('should execute router handlers within reasonable time limits', async () => {
+      const startTime = performance.now();
+
+      await request(app)
+        .post('/api/users/user_1/activate')
+        .send({ performanceTest: true })
+        .expect(200);
+
+      const endTime = performance.now();
+      const executionTime = endTime - startTime;
+
+      // Router handler should complete within 100ms
+      expect(executionTime).toBeLessThan(100);
+    });
+
+    it('should handle rapid successive requests efficiently', async () => {
+      const startTime = performance.now();
+
+      const promises = Array.from({ length: 50 }, (_, i) =>
+        request(app)
+          .get('/api/users/user_1/profile')
+          .query({ requestId: i })
+      );
+
+      const responses = await Promise.all(promises);
+      const endTime = performance.now();
+
+      // All 50 requests should complete within 1 second
+      expect(endTime - startTime).toBeLessThan(1000);
+
+      // All responses should be successful
+      responses.forEach(response => {
+        expect(response.status).toBe(200);
+      });
+    });
+
+    it('should not leak memory during handler execution', async () => {
+      const getMemoryUsage = () => {
+        if (global.gc) {
+          global.gc();
+        }
+        return process.memoryUsage().heapUsed;
+      };
+
+      const initialMemory = getMemoryUsage();
+
+      // Execute multiple operations
+      for (let i = 0; i < 100; i++) {
+        await request(app)
+          .post('/api/users/user_1/activate')
+          .send({ memoryTest: i });
+      }
+
+      const finalMemory = getMemoryUsage();
+      const memoryIncrease = finalMemory - initialMemory;
+
+      // Memory increase should be reasonable (less than 10MB)
+      expect(memoryIncrease).toBeLessThan(10 * 1024 * 1024);
+    });
+
+    it('should handle bulk operations efficiently', async () => {
+      const largeUserList = Array.from({ length: 1000 }, (_, i) => `user_${i}`);
+
+      const startTime = performance.now();
+
+      const response = await request(app)
+        .post('/api/users/bulkActivate')
+        .send({ userIds: largeUserList })
+        .expect(200);
+
+      const endTime = performance.now();
+
+      expect(response.body.processedUsers).toBe(1000);
+      expect(endTime - startTime).toBeLessThan(200); // Should complete in under 200ms
+    });
+  });
+
+  describe('Context and Parameter Validation', () => {
+    it('should pass correct context to router handlers', async () => {
+      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+      await request(app)
+        .post('/api/users/user_1/activate')
+        .set('X-Test-Header', 'test-value')
+        .send({ contextTest: true });
+
+      // Verify that console.log was called (indicating handler received context)
+      expect(consoleSpy).toHaveBeenCalledWith('Router-level activate action called for user:', 'user_1');
+
+      consoleSpy.mockRestore();
+    });
+
+    it('should handle complex parameter structures', async () => {
+      const complexParams = {
+        userIds: ['user_1', 'user_2'],
+        metadata: {
+          reason: 'bulk operation',
+          priority: 'high',
+          tags: ['urgent', 'security'],
+          config: {
+            sendEmail: true,
+            auditLog: true,
+            notifications: {
+              slack: true,
+              email: false
+            }
+          }
+        }
+      };
+
+      const response = await request(app)
+        .post('/api/users/bulkActivate')
+        .send(complexParams)
+        .expect(200);
+
+      expect(response.body.processedUsers).toBe(2);
+      expect(response.body.externalServiceCalled).toBe(true);
+    });
+
+    it('should handle location parameters correctly for composite items', async () => {
+      const response = await request(app)
+        .post('/api/posts/post_1/publish')
+        .send({
+          platforms: ['twitter', 'facebook'],
+          schedule: new Date().toISOString()
+        })
+        .expect(200);
+
+      expect(response.body.postId).toBe('post_1');
+      // Note: authorId comes from ik.loc[0].lk which may be undefined in this test context
+      // since we're not going through the parent user router context
+      expect(response.body.message).toBe('Post published via router handler');
+    });
+
+    it('should preserve parameter types correctly', async () => {
+      const response = await request(app)
+        .get('/api/posts/post_1/analytics')
+        .query({
+          timeframe: '30days',
+          includeDetails: 'true',
+          limit: '100'
+        })
+        .expect(200);
+
+      expect(response.body.postId).toBe('post_1');
+      expect(typeof response.body.views).toBe('number');
+      expect(typeof response.body.engagementRate).toBe('number');
+    });
+  });
+
+  describe('Router Handler Priority and Overrides', () => {
+    it('should prioritize router handlers over library operations', async () => {
+      // Test that router-defined activate takes precedence over library activate
+      const response = await request(app)
+        .post('/api/users/user_1/activate')
+        .send({ test: 'priority test' })
+        .expect(200);
+
+      // Should get router handler response, not library response
+      expect(response.body.message).toBe('User activated via router handler');
+      expect(response.body.emailSent).toBe(true); // Router-specific field
+      expect(response.body.timestamp).toBeDefined();
+    });
+
+    it('should allow router handlers to extend library functionality', async () => {
+      const response = await request(app)
+        .get('/api/users/user_1/profile')
+        .expect(200);
+
+      // Router handler provides more data than library would
+      expect(response.body.basicInfo).toBeDefined();
+      expect(response.body.extendedInfo).toBeDefined();
+      expect(response.body.socialInfo).toBeDefined();
+      expect(response.body.socialInfo.followers).toBe(150);
+    });
+
+    it('should maintain consistent behavior across handler types', async () => {
+      // Test that all handler types return timestamps
+      const [actionResponse, facetResponse, allActionResponse, allFacetResponse] = await Promise.all([
+        request(app).post('/api/users/user_1/activate').send({}),
+        request(app).get('/api/users/user_1/stats'),
+        request(app).post('/api/users/bulkActivate').send({ userIds: ['user_1'] }),
+        request(app).get('/api/users/userStats')
+      ]);
+
+      expect(actionResponse.body.timestamp).toBeDefined();
+      expect(facetResponse.body.lastActivity).toBeDefined();
+      expect(allActionResponse.body.timestamp).toBeDefined();
+      // userStats doesn't have timestamp but has other time fields
+      expect(allFacetResponse.body.totalUsers).toBeDefined();
+    });
+  });
+
+  describe('Cross-Router Integration', () => {
+    it('should handle operations across user and post routers', async () => {
+      // First activate a user
+      const userResponse = await request(app)
+        .post('/api/users/user_1/activate')
+        .send({ reason: 'cross-router test' })
+        .expect(200);
+
+      expect(userResponse.body.userId).toBe('user_1');
+
+      // Then publish a post (note: authorId may be undefined without proper router nesting)
+      const postResponse = await request(app)
+        .post('/api/posts/post_1/publish')
+        .send({ platforms: ['twitter'] })
+        .expect(200);
+
+      expect(postResponse.body.message).toBe('Post published via router handler');
+      expect(postResponse.body.postId).toBe('post_1');
+    });
+
+    it('should maintain independent router configurations', async () => {
+      const userRouterOptions = (userRouter as any).options;
+      const postRouterOptions = (postRouter as any).options;
+
+      // Verify routers have different action sets
+      expect(userRouterOptions.actions.activate).toBeDefined();
+      expect(userRouterOptions.actions.publish).toBeUndefined();
+
+      expect(postRouterOptions.actions.publish).toBeDefined();
+      expect(postRouterOptions.actions.activate).toBeUndefined();
     });
   });
 });

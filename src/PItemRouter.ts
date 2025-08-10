@@ -1,7 +1,7 @@
 import { Item, ItemQuery, paramsToQuery, PriKey, QueryParams, validatePK } from "@fjell/core";
-import { ItemRouter, ItemRouterOptions } from "./ItemRouter.js";
-import { Instance } from "./Instance.js";
 import { Request, Response } from "express";
+import { ItemRouter, ItemRouterOptions } from "./ItemRouter.js";
+import { Library } from "@fjell/lib";
 
 interface ParsedQuery {
   [key: string]: undefined | string | string[] | ParsedQuery | ParsedQuery[];
@@ -9,7 +9,7 @@ interface ParsedQuery {
 
 export class PItemRouter<T extends Item<S>, S extends string> extends ItemRouter<S> {
 
-  constructor(lib: Instance<T, S>, keyType: S, options: ItemRouterOptions<S, never, never, never, never, never> = {}) {
+  constructor(lib: Library<T, S>, keyType: S, options: ItemRouterOptions<S, never, never, never, never, never> = {}) {
     super(lib as any, keyType, options);
   }
 
@@ -18,14 +18,56 @@ export class PItemRouter<T extends Item<S>, S extends string> extends ItemRouter
     return pri
   }
 
-  public createItem = async (req: Request, res: Response) => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  public createItem = async (req: Request, res: Response, next?: any) => {
     const libOperations = this.lib.operations;
     this.logger.default('Creating Item', { body: req.body, query: req.query, params: req.params, locals: res.locals });
-    const itemToCreate = this.convertDates(req.body as Item<S>);
-    let item = validatePK(await libOperations.create(itemToCreate), this.getPkType()) as Item<S>;
-    item = await this.postCreateItem(item);
-    this.logger.default('Created Item %j', item);
-    res.status(201).json(item);
+
+    try {
+      const itemToCreate = this.convertDates(req.body as Item<S>);
+      let item = validatePK(await libOperations.create(itemToCreate), this.getPkType()) as Item<S>;
+      item = await this.postCreateItem(item);
+      this.logger.default('Created Item %j', item);
+      res.status(201).json(item);
+    } catch (error: any) {
+      this.logger.error('Error caught in createItem', {
+        errorName: error.name,
+        errorMessage: error.message,
+        body: req.body
+      });
+
+      // Check if this is a validation error (from fjell-lib, custom validators, or database constraints)
+      if (error.name === 'CreateValidationError' ||
+        error.name === 'ValidationError' ||
+        error.name === 'SequelizeValidationError' ||
+        error.message?.includes('validation') ||
+        error.message?.includes('Validation failed') ||
+        error.message?.includes('required') ||
+        error.message?.includes('must be') ||
+        error.message?.includes('cannot be') ||
+        error.message?.includes('notNull Violation') ||
+        error.message?.includes('cannot be null') ||
+        error.message?.includes('Required field')) {
+        this.logger.error('Validation error in createItem', {
+          error: error.message,
+          body: req.body
+        });
+        res.status(400).json({
+          success: false,
+          error: error.message || 'Validation failed'
+        });
+      } else {
+        this.logger.error('General error in createItem', {
+          error: error.message,
+          stack: error.stack,
+          body: req.body
+        });
+        res.status(500).json({
+          success: false,
+          error: 'Internal server error'
+        });
+      }
+    }
   };
 
   protected findItems = async (req: Request, res: Response) => {
@@ -43,11 +85,21 @@ export class PItemRouter<T extends Item<S>, S extends string> extends ItemRouter
       // If finder is defined?  Call a finder.
       this.logger.default('Finding Items with Finder %s %j one:%s', finder, finderParams, one);
 
-      if (one === 'true') {
-        const item = await (this.lib as any).findOne(finder, JSON.parse(finderParams));
-        items = item ? [item] : [];
-      } else {
-        items = await libOperations.find(finder, JSON.parse(finderParams));
+      try {
+        const parsedParams = finderParams ? JSON.parse(finderParams) : {};
+        if (one === 'true') {
+          const item = await (this.lib as any).findOne(finder, parsedParams);
+          items = item ? [item] : [];
+        } else {
+          items = await libOperations.find(finder, parsedParams);
+        }
+      } catch (parseError: any) {
+        this.logger.error('Error parsing finderParams JSON', { finder, finderParams, error: parseError.message });
+        res.status(400).json({
+          error: 'Invalid JSON in finderParams',
+          message: parseError.message
+        });
+        return;
       }
     } else {
       // TODO: This is once of the more important places to perform some validaation and feedback

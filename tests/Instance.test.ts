@@ -5,12 +5,13 @@ import { createInstance, isInstance } from '../src/Instance';
 import { ItemRouter } from '../src/ItemRouter';
 import { Item } from '@fjell/core';
 import { Coordinate, Registry } from '@fjell/registry';
-import { Operations, Options } from '@fjell/lib';
+import type { Operations } from '../src/Operations';
+import { Options } from '@fjell/lib';
 
 // Mock the logger
 vi.mock('@fjell/logging', () => ({
   default: {
-    get: vi.fn().mockReturnValue({
+    getLogger: vi.fn().mockReturnValue({
       debug: vi.fn(),
       error: vi.fn(),
       warning: vi.fn(),
@@ -24,6 +25,7 @@ vi.mock('@fjell/logging', () => ({
       time: vi.fn().mockReturnThis(),
       end: vi.fn(),
       log: vi.fn(),
+      get: vi.fn().mockReturnThis(),  // For nested logger.get() calls
     })
   }
 }));

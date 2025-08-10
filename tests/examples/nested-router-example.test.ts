@@ -444,7 +444,7 @@ describe('Nested Router Example', () => {
         .post('/api/organizations')
         .send({ invalid: 'data' });
 
-      expect(response.status).toBe(500);
+      expect(response.status).toBe(400);
     });
   });
 
