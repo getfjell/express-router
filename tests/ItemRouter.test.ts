@@ -137,7 +137,7 @@ describe("ItemRouter", () => {
         findOne: vi.fn(),
         action: vi.fn().mockImplementation(async (ik, actionKey, body) => {
           if (actionKey === 'customAction') {
-            return { customAction: true, ...testItem };
+            return [{ customAction: true, ...testItem }, []];
           }
           throw new Error('Action not found');
         }),
@@ -149,7 +149,7 @@ describe("ItemRouter", () => {
         }),
         allAction: vi.fn().mockImplementation(async (allActionKey, allActionParams) => {
           if (allActionKey === 'customAllAction') {
-            return { allAction: true, ...testItem };
+            return [{ allAction: true, ...testItem }, []];
           }
           throw new Error('All Action not found');
         }),
@@ -449,7 +449,10 @@ describe("ItemRouter", () => {
       // @ts-ignore
       req.path = '/test/123/customAction';
       const response = await router['postItemAction'](req as Request, res as Response);
-      expect(res.json).toHaveBeenCalledWith({ customAction: true, ...testItem });
+      expect(res.json).toHaveBeenCalledWith({
+        result: { customAction: true, ...testItem },
+        affectedItems: []
+      });
     });
 
     it('test calling an action that doesnt exist', async () => {
@@ -566,7 +569,10 @@ describe("ItemRouter", () => {
       req.path = '/test/customAllAction';
       await router['postAllAction'](req as Request, res as Response);
       expect(lib.operations.allAction).toHaveBeenCalledWith('customAllAction', req.body, locKeyArray);
-      expect(res.json).toHaveBeenCalledWith({ allAction: true, ...testItem });
+      expect(res.json).toHaveBeenCalledWith({
+        result: { allAction: true, ...testItem },
+        affectedItems: []
+      });
     });
 
     it('should return error when allActions are not configured', async () => {

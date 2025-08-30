@@ -218,7 +218,11 @@ export class ItemRouter<
       return;
     }
     try {
-      res.json(await libOperations.allAction(allActionKey, req.body, this.getLocations(res)));
+      const [result, affectedItems] = await libOperations.allAction(allActionKey, req.body, this.getLocations(res));
+      res.json({
+        result,
+        affectedItems
+      });
     } catch (err: any) {
       this.logger.error('Error in All Action', { message: err?.message, stack: err?.stack });
       res.status(500).json(err);
@@ -308,7 +312,11 @@ export class ItemRouter<
       return;
     }
     try {
-      res.json(await libOperations.action(ik, actionKey, req.body));
+      const [result, affectedItems] = await libOperations.action(ik, actionKey, req.body);
+      res.json({
+        result,
+        affectedItems
+      });
     } catch (err: any) {
       this.logger.error('Error in Item Action', { message: err?.message, stack: err?.stack });
       res.status(500).json(err);
