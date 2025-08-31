@@ -449,10 +449,10 @@ describe("ItemRouter", () => {
       // @ts-ignore
       req.path = '/test/123/customAction';
       const response = await router['postItemAction'](req as Request, res as Response);
-      expect(res.json).toHaveBeenCalledWith({
-        result: { customAction: true, ...testItem },
-        affectedItems: []
-      });
+      expect(res.json).toHaveBeenCalledWith([
+        { customAction: true, ...testItem },
+        []
+      ]);
     });
 
     it('test calling an action that doesnt exist', async () => {
@@ -569,10 +569,10 @@ describe("ItemRouter", () => {
       req.path = '/test/customAllAction';
       await router['postAllAction'](req as Request, res as Response);
       expect(lib.operations.allAction).toHaveBeenCalledWith('customAllAction', req.body, locKeyArray);
-      expect(res.json).toHaveBeenCalledWith({
-        result: { allAction: true, ...testItem },
-        affectedItems: []
-      });
+      expect(res.json).toHaveBeenCalledWith([
+        { allAction: true, ...testItem },
+        []
+      ]);
     });
 
     it('should return error when allActions are not configured', async () => {
