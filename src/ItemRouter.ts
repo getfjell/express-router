@@ -263,7 +263,7 @@ export class ItemRouter<
       return;
     }
     try {
-      const combinedQueryParams = { ...req.query, ...req.params } as Record<string, string | number | boolean | Date | Array<string | number | boolean | Date>>;
+      const combinedQueryParams = { ...(req.query || {}), ...(req.params || {}) } as Record<string, string | number | boolean | Date | Array<string | number | boolean | Date>>;
       res.json(await libOperations.allFacet(facetKey, combinedQueryParams, this.getLocations(res)));
     } catch (err: any) {
       this.logger.error('Error in All Facet', { message: err?.message, stack: err?.stack });
@@ -355,7 +355,7 @@ export class ItemRouter<
       return;
     }
     try {
-      const combinedQueryParams = { ...req.query, ...req.params } as Record<string, string | number | boolean | Date | Array<string | number | boolean | Date>>;
+      const combinedQueryParams = { ...(req.query || {}), ...(req.params || {}) } as Record<string, string | number | boolean | Date | Array<string | number | boolean | Date>>;
       res.json(await libOperations.facet(ik, facetKey, combinedQueryParams));
     } catch (err: any) {
       this.logger.error('Error in Item Facet', { message: err?.message, stack: err?.stack });
