@@ -159,7 +159,15 @@ export class ItemRouter<
   }
 
   protected getLk(res: Response): LocKey<S> {
-    return { kt: this.keyType, lk: res.locals[this.getPkParam()] };
+    const pkParam = this.getPkParam();
+    const lkValue = res.locals[pkParam];
+    this.logger.debug('Getting location key', { 
+      keyType: this.keyType, 
+      pkParam: pkParam,
+      lkValue: lkValue,
+      allLocals: res.locals
+    });
+    return { kt: this.keyType, lk: lkValue };
   }
 
   // this is meant to be consumed by children routers

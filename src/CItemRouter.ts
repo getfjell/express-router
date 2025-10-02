@@ -110,9 +110,11 @@ export class CItemRouter<
     } else {
       // TODO: This is once of the more important places to perform some validaation and feedback
       const itemQuery: ItemQuery = paramsToQuery(req.query as QueryParams);
-      this.logger.default('Finding Items with Query: %j', itemQuery);
-      items = await libOperations.all(itemQuery, this.getLocations(res));
-      this.logger.default('Found %d Items with Query', items.length);
+      const locations = this.getLocations(res);
+      this.logger.debug('Finding Items with Query: %j', itemQuery);
+      this.logger.debug('Location keys being passed: %j', locations);
+      items = await libOperations.all(itemQuery, locations);
+      this.logger.debug('Found %d Items with Query', items.length);
     }
 
     res.json(items.map((item: Item<S, L1, L2, L3, L4, L5>) => validatePK(item, this.getPkType())));
