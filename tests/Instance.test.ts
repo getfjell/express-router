@@ -1,5 +1,4 @@
-
-/* eslint-disable no-undefined */
+ 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createInstance, isInstance } from '../src/Instance';
 import { ItemRouter } from '../src/ItemRouter';

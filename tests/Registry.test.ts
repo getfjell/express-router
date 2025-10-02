@@ -1,4 +1,4 @@
-/* eslint-disable no-undefined */
+ 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createRegistry, createRegistryFactory, Registry } from '../src/Registry';
 import { RegistryHub } from '@fjell/registry';

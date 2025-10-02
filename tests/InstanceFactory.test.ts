@@ -1,4 +1,4 @@
-/* eslint-disable no-undefined */
+ 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createInstanceFactory } from '../src/InstanceFactory';
 import { createInstance } from '../src/Instance';

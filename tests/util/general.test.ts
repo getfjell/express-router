@@ -1,4 +1,4 @@
-/* eslint-disable no-undefined */
+ 
 import { describe, expect, it } from 'vitest';
 import { clean, stringifyJSON } from '../../src/util/general';
 
