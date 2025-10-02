@@ -11,5 +11,12 @@ export default [
     rules: {
       "@typescript-eslint/no-unused-vars": "off"
     }
-  }
+  },
+  {
+    // Relax undefined rule for tests
+    files: ["tests/**/*.ts", "tests/**/*.tsx"],
+    rules: {
+      "no-undefined": "off",
+    },
+  },
 ];

@@ -1,6 +1,6 @@
 {
   "name": "@fjell/express-router",
-  "version": "4.4.42",
+  "version": "4.4.43-dev.0",
   "license": "Apache-2.0",
   "keywords": [
     "express",
@@ -26,6 +26,7 @@
     "lint": "eslint . --ext .ts --fix",
     "clean": "rm -rf dist",
     "test": "npm run lint && vitest run --coverage",
+    "precommit": "npm run clean && npm run lint && npm run build && npm run test",
     "prepublishOnly": "npm run clean && npm run build",
     "docs:dev": "cd docs && npm run dev",
     "docs:build": "cd docs && npm run build",

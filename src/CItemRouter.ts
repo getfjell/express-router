@@ -53,7 +53,7 @@ export class CItemRouter<
     return this.parentRoute!.getLKA(res) as LocKeyArray<L1, L2, L3, L4, L5>;
   }
 
-  protected createItem = async (req: Request, res: Response) => {
+  public createItem = async (req: Request, res: Response) => {
     const libOperations = this.lib.operations;
     this.logger.default('Creating Item', { body: req?.body, query: req?.query, params: req?.params, locals: res?.locals });
     try {
