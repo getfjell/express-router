@@ -161,8 +161,8 @@ export class ItemRouter<
   protected getLk(res: Response): LocKey<S> {
     const pkParam = this.getPkParam();
     const lkValue = res.locals[pkParam];
-    this.logger.debug('Getting location key', { 
-      keyType: this.keyType, 
+    this.logger.debug('Getting location key', {
+      keyType: this.keyType,
       pkParam: pkParam,
       lkValue: lkValue,
       allLocals: res.locals
