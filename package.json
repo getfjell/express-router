@@ -1,6 +1,6 @@
 {
   "name": "@fjell/express-router",
-  "version": "4.4.47",
+  "version": "4.4.48",
   "license": "Apache-2.0",
   "keywords": [
     "express",
@@ -34,10 +34,10 @@
     "docs:test": "cd docs && npm run test"
   },
   "dependencies": {
-    "@fjell/core": "^4.4.43",
-    "@fjell/lib": "^4.4.49",
+    "@fjell/core": "^4.4.44",
+    "@fjell/lib": "^4.4.50",
     "@fjell/logging": "^4.4.47",
-    "@fjell/registry": "^4.4.43",
+    "@fjell/registry": "^4.4.44",
     "deepmerge": "^4.3.1",
     "express": "^5.1.0"
   },
