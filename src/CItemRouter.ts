@@ -56,6 +56,7 @@ export class CItemRouter<
   public createItem = async (req: Request, res: Response) => {
     const libOperations = this.lib.operations;
     this.logger.default('Creating Item', { body: req?.body, query: req?.query, params: req?.params, locals: res?.locals });
+    
     try {
       const itemToCreate = this.convertDates(req.body as Item<S, L1, L2, L3, L4, L5>);
       let item = validatePK(await libOperations.create(
@@ -63,17 +64,18 @@ export class CItemRouter<
       item = await this.postCreateItem(item);
       this.logger.default('Created Item %j', item);
       res.status(201).json(item);
-    } catch (err: any) {
-      if (err instanceof NotFoundError) {
-        this.logger.error('Item Not Found for Create', { message: err?.message, stack: err?.stack });
-        res.status(404).json({
-          message: "Item Not Found",
-        });
+    } catch (error: any) {
+      this.logger.error('Error in createItem', { error });
+      // Check for validation errors
+      if (error.name === 'CreateValidationError' || error.name === 'ValidationError' ||
+          error.name === 'SequelizeValidationError' ||
+          (error.message && (error.message.includes('validation') ||
+           error.message.includes('required') ||
+           error.message.includes('cannot be null') ||
+           error.message.includes('notNull Violation')))) {
+        res.status(400).json({ message: "Validation Error" });
       } else {
-        this.logger.error('General Error in Create', { message: err?.message, stack: err?.stack });
-        res.status(500).json({
-          message: "General Error",
-        });
+        res.status(500).json({ message: "General Error" });
       }
     }
   };
@@ -85,39 +87,50 @@ export class CItemRouter<
     const finderParams = query['finderParams'] as string;
     const one = query['one'] as string;
 
-    let items: Item<S, L1, L2, L3, L4, L5>[] = [];
+    try {
+      let items: Item<S, L1, L2, L3, L4, L5>[] = [];
 
-    if (finder) {
-      // If finder is defined?  Call a finder.
-      this.logger.default('Finding Items with Finder', { finder, finderParams, one });
+      if (finder) {
+        // If finder is defined?  Call a finder.
+        this.logger.default('Finding Items with Finder', { finder, finderParams, one });
 
-      try {
-        const parsedParams = finderParams ? JSON.parse(finderParams) : {};
+        let parsedParams: any;
+        try {
+          parsedParams = finderParams ? JSON.parse(finderParams) : {};
+        } catch (parseError: any) {
+          res.status(400).json({
+            error: 'Invalid JSON in finderParams',
+            message: parseError.message
+          });
+          return;
+        }
+
         if (one === 'true') {
           const item = await (this.lib as any).findOne(finder, parsedParams, this.getLocations(res));
           items = item ? [item] : [];
         } else {
           items = await libOperations.find(finder, parsedParams, this.getLocations(res));
         }
-      } catch (parseError: any) {
-        this.logger.error('Error parsing finderParams JSON', { finder, finderParams, error: parseError.message });
-        res.status(400).json({
-          error: 'Invalid JSON in finderParams',
-          message: parseError.message
-        });
-        return;
+      } else {
+        // TODO: This is once of the more important places to perform some validaation and feedback
+        const itemQuery: ItemQuery = paramsToQuery(req.query as QueryParams);
+        const locations = this.getLocations(res);
+        this.logger.debug('Finding Items with Query: %j', itemQuery);
+        this.logger.debug('Location keys being passed: %j', locations);
+        items = await libOperations.all(itemQuery, locations);
+        this.logger.debug('Found %d Items with Query', items.length);
       }
-    } else {
-      // TODO: This is once of the more important places to perform some validaation and feedback
-      const itemQuery: ItemQuery = paramsToQuery(req.query as QueryParams);
-      const locations = this.getLocations(res);
-      this.logger.debug('Finding Items with Query: %j', itemQuery);
-      this.logger.debug('Location keys being passed: %j', locations);
-      items = await libOperations.all(itemQuery, locations);
-      this.logger.debug('Found %d Items with Query', items.length);
-    }
 
-    res.json(items.map((item: Item<S, L1, L2, L3, L4, L5>) => validatePK(item, this.getPkType())));
+      const validatedItems = items.map((item: Item<S, L1, L2, L3, L4, L5>) => validatePK(item, this.getPkType()));
+      res.json(validatedItems);
+    } catch (error: any) {
+      this.logger.error('Error in findItems', { error });
+      if (error instanceof NotFoundError || error?.name === 'NotFoundError') {
+        res.status(404).json({ error: error.message || 'Parent item not found' });
+      } else {
+        res.status(500).json({ error: error.message || 'Internal server error' });
+      }
+    }
   };
 
 }

@@ -169,20 +169,20 @@ describe('Router Options Example', () => {
         all: vi.fn().mockResolvedValue([]),
         find: vi.fn().mockResolvedValue([]),
         findOne: vi.fn().mockResolvedValue(null),
-        action: vi.fn().mockImplementation(async (ik, actionKey) => ({
+        action: vi.fn().mockImplementation(async (ik, actionKey) => [{
           source: "library",
           action: actionKey,
           ik
-        })),
+        }, []]),
         facet: vi.fn().mockImplementation(async (ik, facetKey) => ({
           source: "library",
           facet: facetKey,
           ik
         })),
-        allAction: vi.fn().mockImplementation(async (actionKey) => ({
+        allAction: vi.fn().mockImplementation(async (actionKey) => [[{
           source: "library",
           allAction: actionKey
-        })),
+        }], []]),
         allFacet: vi.fn().mockImplementation(async (facetKey) => ({
           source: "library",
           allFacet: facetKey
@@ -654,10 +654,16 @@ describe('Router Options Example', () => {
 
       await router['postItemAction'](req as Request, res as Response);
 
-      // Verify that the response was called with error (action doesn't exist in mocks)
-      expect(res.json).toHaveBeenCalledWith({
-        error: "Item Action is not configured"
-      });
+      // Verify library handler was called since router doesn't have this action
+      expect(mockLib.operations.action).toHaveBeenCalledWith(
+        {
+          kt: "user",
+          pk: "user-1",
+          loc: [{ kt: "tenant", lk: "tenant-1" }]
+        },
+        'nonExistentAction',
+        req.body
+      );
     });
 
     it('should call library facet operations when no router options provided', async () => {
@@ -666,10 +672,8 @@ describe('Router Options Example', () => {
 
       await router['getItemFacet'](req as Request, res as Response);
 
-      // Verify that the response was called with error (facet doesn't exist in mocks)
-      expect(res.json).toHaveBeenCalledWith({
-        error: "Item Facet is not configured"
-      });
+      // Verify library handler was called since router doesn't have this facet
+      expect(mockLib.operations.facet).toHaveBeenCalled();
     });
 
     it('should call library allAction operations when no router options provided', async () => {
@@ -678,10 +682,8 @@ describe('Router Options Example', () => {
 
       await router['postAllAction'](req as Request, res as Response);
 
-      // Verify that the response was called with error (allAction doesn't exist in mocks)
-      expect(res.json).toHaveBeenCalledWith({
-        error: "All Action is not configured"
-      });
+      // Verify library handler was called since router doesn't have this allAction
+      expect(mockLib.operations.allAction).toHaveBeenCalled();
     });
 
     it('should call library allFacet operations when no router options provided', async () => {
@@ -690,10 +692,8 @@ describe('Router Options Example', () => {
 
       await router['getAllFacet'](req as Request, res as Response);
 
-      // Verify that the response was called with error (allFacet doesn't exist in mocks)
-      expect(res.json).toHaveBeenCalledWith({
-        error: "All Facet is not configured"
-      });
+      // Verify library handler was called since router doesn't have this allFacet
+      expect(mockLib.operations.allFacet).toHaveBeenCalled();
     });
   });
 
@@ -1049,13 +1049,16 @@ describe('Router Options Example', () => {
 
     it('should validate mockLibWithConflicts action operations', async () => {
       const actionResult = await mockLib.operations.action({ kt: "user", pk: "test" }, "testAction");
-      expect(actionResult).toEqual(expect.objectContaining({ source: "library", action: "testAction" }));
+      expect(actionResult).toBeInstanceOf(Array);
+      expect(actionResult[0]).toEqual(expect.objectContaining({ source: "library", action: "testAction" }));
 
       const facetResult = await mockLib.operations.facet({ kt: "user", pk: "test" }, "testFacet");
       expect(facetResult).toEqual(expect.objectContaining({ source: "library", facet: "testFacet" }));
 
       const allActionResult = await mockLib.operations.allAction("testAllAction");
-      expect(allActionResult).toEqual({ source: "library", allAction: "testAllAction" });
+      expect(allActionResult).toBeInstanceOf(Array);
+      expect(allActionResult[0]).toBeInstanceOf(Array);
+      expect(allActionResult[0][0]).toEqual(expect.objectContaining({ source: "library", allAction: "testAllAction" }));
 
       const allFacetResult = await mockLib.operations.allFacet("testAllFacet");
       expect(allFacetResult).toEqual({ source: "library", allFacet: "testAllFacet" });

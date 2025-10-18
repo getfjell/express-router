@@ -1,4 +1,5 @@
 import {
+  ActionError,
   ComKey,
   cPK,
   Item,
@@ -11,8 +12,9 @@ import {
 import { NotFoundError } from "@fjell/lib";
 import { Instance } from "./Instance.js";
 import deepmerge from "deepmerge";
-import { Request, Response, Router } from "express";
+import { NextFunction, Request, Response, Router } from "express";
 import LibLogger from "./logger.js";
+import { createErrorHandler, ErrorHandlerOptions } from "./errorHandler.js";
 
 /**
  * Router-level action method signature - aligned with library ActionMethod pattern
@@ -119,6 +121,11 @@ export type ItemRouterOptions<
    * The key in the Record is the facet name, method receives parameters and optional locations
    */
   allFacets?: Record<string, RouterAllFacetMethod<L1, L2, L3, L4, L5>>;
+
+  /**
+   * Error handler configuration
+   */
+  errorHandler?: ErrorHandlerOptions;
 };
 
 export class ItemRouter<
@@ -136,6 +143,7 @@ export class ItemRouter<
   private childRouters: Record<string, Router> = {};
   protected logger;
   protected parentRoute?: ItemRouter<L1, L2, L3, L4, L5, never>;
+  protected errorHandler: (err: any, req: Request, res: Response, next: NextFunction) => void;
 
   constructor(
     lib: Instance<Item<S, L1, L2, L3, L4, L5>, S, L1, L2, L3, L4, L5>,
@@ -148,6 +156,16 @@ export class ItemRouter<
     this.options = options;
     this.parentRoute = parentRoute;
     this.logger = LibLogger.get("ItemRouter", keyType);
+    this.errorHandler = createErrorHandler(options.errorHandler);
+  }
+
+  /**
+   * Wrap async route handlers to catch errors and pass to error handler
+   */
+  protected wrapAsync(fn: (req: Request, res: Response, next: NextFunction) => Promise<any>) {
+    return (req: Request, res: Response, next: NextFunction) => {
+      Promise.resolve(fn.call(this, req, res, next)).catch(next);
+    };
   }
 
   public getPkType = (): S => {
@@ -190,192 +208,174 @@ export class ItemRouter<
   }
 
   protected postAllAction = async (req: Request, res: Response) => {
-    const libOptions = this.lib.options;
     const libOperations = this.lib.operations;
     this.logger.debug('Posting All Action', { query: req?.query, params: req?.params, locals: res?.locals });
     const allActionKey = req.path.substring(req.path.lastIndexOf('/') + 1);
 
-    // Check for router-level handler first
-    if (this.options.allActions && this.options.allActions[allActionKey]) {
-      this.logger.debug('Using router-level all action handler', { allActionKey });
-      try {
+    try {
+      // Check for router-level handler first
+      if (this.options.allActions && this.options.allActions[allActionKey]) {
+        this.logger.debug('Using router-level all action handler', { allActionKey });
         const result = await this.options.allActions[allActionKey](
           req.body as Record<string, string | number | boolean | Date | Array<string | number | boolean | Date>>,
           this.getLocations(res),
           { req, res }
         );
-        if (result != null) res.json(result);
-        return;
-      } catch (err: any) {
-        this.logger.error('Error in router-level all action', { message: err?.message, stack: err?.stack });
-        res.status(500).json(err);
+        if (result != null) {
+          res.json(result);
+        }
         return;
       }
-    }
 
-    // Fallback to library handler
-    if (!libOptions.allActions) {
-      this.logger.error('All Actions are not configured');
-      res.status(500).json({ error: 'All Actions are not configured' });
-      return;
-    }
-    const allAction = libOptions.allActions[allActionKey];
-    if (!allAction) {
-      this.logger.error('All Action is not configured', { allActionKey });
-      res.status(500).json({ error: 'All Action is not configured' });
-      return;
-    }
-    try {
-      const [result, affectedItems] = await libOperations.allAction(allActionKey, req.body, this.getLocations(res));
-      res.json([result, affectedItems]);
-    } catch (err: any) {
-      this.logger.error('Error in All Action', { message: err?.message, stack: err?.stack });
-      res.status(500).json(err);
+      // Check if allAction operation exists
+      if (!libOperations.allAction) {
+        res.status(500).json({ error: 'All Actions are not configured' });
+        return;
+      }
+
+      // Fallback to library handler
+      const [result] = await libOperations.allAction(allActionKey, req.body, this.getLocations(res));
+      res.json(result);
+    } catch (error: any) {
+      this.logger.error('Error in postAllAction', { error });
+      // Check if it's a validation error or action not found error
+      if ((error.name === 'ValidationError' || error.message?.includes('not found')) && error.message) {
+        res.status(500).json({ error: 'All Action is not configured' });
+      } else {
+        res.status(500).json(error);
+      }
     }
   }
 
   protected getAllFacet = async (req: Request, res: Response) => {
-    const libOptions = this.lib.options;
     const libOperations = this.lib.operations;
     this.logger.debug('Getting All Facet', { query: req?.query, params: req?.params, locals: res?.locals });
     const facetKey = req.path.substring(req.path.lastIndexOf('/') + 1);
 
-    // Check for router-level handler first
-    if (this.options.allFacets && this.options.allFacets[facetKey]) {
-      this.logger.debug('Using router-level all facet handler', { facetKey });
-      try {
+    try {
+      // Check for router-level handler first
+      if (this.options.allFacets && this.options.allFacets[facetKey]) {
+        this.logger.debug('Using router-level all facet handler', { facetKey });
         const result = await this.options.allFacets[facetKey](
           req.query as Record<string, string | number | boolean | Date | Array<string | number | boolean | Date>>,
           this.getLocations(res),
           { req, res }
         );
-        if (result != null) res.json(result);
-        return;
-      } catch (err: any) {
-        this.logger.error('Error in router-level all facet', { message: err?.message, stack: err?.stack });
-        res.status(500).json(err);
+        if (result != null) {
+          res.json(result);
+        }
         return;
       }
-    }
 
-    // Fallback to library handler
-    if (!libOptions.allFacets) {
-      this.logger.error('All Facets are not configured');
-      res.status(500).json({ error: 'All Facets are not configured' });
-      return;
-    }
-    const facet = libOptions.allFacets[facetKey];
-    if (!facet) {
-      this.logger.error('All Facet is not configured', { facetKey });
-      res.status(500).json({ error: 'All Facet is not configured' });
-      return;
-    }
-    try {
+      // Check if allFacet operation exists
+      if (!libOperations.allFacet) {
+        res.status(500).json({ error: 'All Facets are not configured' });
+        return;
+      }
+
+      // Fallback to library handler
       const combinedQueryParams = { ...(req.query || {}), ...(req.params || {}) } as Record<string, string | number | boolean | Date | Array<string | number | boolean | Date>>;
-      res.json(await libOperations.allFacet(facetKey, combinedQueryParams, this.getLocations(res)));
-    } catch (err: any) {
-      this.logger.error('Error in All Facet', { message: err?.message, stack: err?.stack });
-      res.status(500).json(err);
+      const result = await libOperations.allFacet(facetKey, combinedQueryParams, this.getLocations(res));
+      res.json(result);
+    } catch (error: any) {
+      this.logger.error('Error in getAllFacet', { error });
+      // Check if it's a validation error or facet not found error
+      if ((error.name === 'ValidationError' || error.message?.includes('not found')) && error.message) {
+        res.status(500).json({ error: 'All Facet is not configured' });
+      } else {
+        res.status(500).json(error);
+      }
     }
   }
 
   protected postItemAction = async (req: Request, res: Response) => {
-    const libOptions = this.lib.options;
     const libOperations = this.lib.operations;
     this.logger.debug('Posting Item Action', { query: req?.query, params: req?.params, locals: res?.locals });
     const ik = this.getIk(res);
     const actionKey = req.path.substring(req.path.lastIndexOf('/') + 1);
 
-    // Check for router-level handler first
-    if (this.options.actions && this.options.actions[actionKey]) {
-      this.logger.debug('Using router-level action handler', { actionKey });
-      try {
+    try {
+      // Check for router-level handler first
+      if (this.options.actions && this.options.actions[actionKey]) {
+        this.logger.debug('Using router-level action handler', { actionKey });
         const result = await this.options.actions[actionKey](
           ik,
           req.body as Record<string, string | number | boolean | Date | Array<string | number | boolean | Date>>,
           { req, res }
         );
-        if (result != null) res.json(result);
-        return;
-      } catch (err: any) {
-        this.logger.error('Error in router-level action', { message: err?.message, stack: err?.stack });
-        res.status(500).json(err);
+        if (result != null) {
+          res.json(result);
+        }
         return;
       }
-    }
 
-    // Fallback to library handler
-    if (!libOptions.actions) {
-      this.logger.error('Item Actions are not configured');
-      res.status(500).json({ error: 'Item Actions are not configured' });
-      return;
-    }
-    const action = libOptions.actions[actionKey];
-    if (!action) {
-      this.logger.error('Item Action is not configured', { actionKey });
-      res.status(500).json({ error: 'Item Action is not configured' });
-      return;
-    }
-    try {
-      const [result, affectedItems] = await libOperations.action(ik, actionKey, req.body);
-      res.json([result, affectedItems]);
-    } catch (err: any) {
-      this.logger.error('Error in Item Action', { message: err?.message, stack: err?.stack });
-      res.status(500).json(err);
+      // Check if actions operation exists
+      if (!libOperations.action) {
+        res.status(500).json({ error: 'Item Actions are not configured' });
+        return;
+      }
+
+      // Fallback to library handler
+      const [result] = await libOperations.action(ik, actionKey, req.body);
+      res.json(result);
+    } catch (error: any) {
+      this.logger.error('Error in postItemAction', { error });
+      // Check if it's a validation error or action not found error
+      if ((error.name === 'ValidationError' || error.message?.includes('not found')) && error.message) {
+        res.status(500).json({ error: 'Item Action is not configured' });
+      } else {
+        res.status(500).json(error);
+      }
     }
   }
 
   protected getItemFacet = async (req: Request, res: Response) => {
-    const libOptions = this.lib.options;
     const libOperations = this.lib.operations;
     this.logger.debug('Getting Item Facet', { query: req?.query, params: req?.params, locals: res?.locals });
     const ik = this.getIk(res);
     const facetKey = req.path.substring(req.path.lastIndexOf('/') + 1);
 
-    // Check for router-level handler first
-    if (this.options.facets && this.options.facets[facetKey]) {
-      this.logger.debug('Using router-level facet handler', { facetKey });
-      try {
+    try {
+      // Check for router-level handler first
+      if (this.options.facets && this.options.facets[facetKey]) {
+        this.logger.debug('Using router-level facet handler', { facetKey });
         const result = await this.options.facets[facetKey](
           ik,
           req.query as Record<string, string | number | boolean | Date | Array<string | number | boolean | Date>>,
           { req, res }
         );
-        if (result != null) res.json(result);
-        return;
-      } catch (err: any) {
-        this.logger.error('Error in router-level facet', { message: err?.message, stack: err?.stack });
-        res.status(500).json(err);
+        if (result != null) {
+          res.json(result);
+        }
         return;
       }
-    }
 
-    // Fallback to library handler
-    if (!libOptions.facets) {
-      this.logger.error('Item Facets are not configured');
-      res.status(500).json({ error: 'Item Facets are not configured' });
-      return;
-    }
-    const facet = libOptions.facets[facetKey];
-    if (!facet) {
-      this.logger.error('Item Facet is not configured', { facetKey });
-      res.status(500).json({ error: 'Item Facet is not configured' });
-      return;
-    }
-    try {
+      // Check if facets operation exists
+      if (!libOperations.facet) {
+        res.status(500).json({ error: 'Item Facets are not configured' });
+        return;
+      }
+
+      // Fallback to library handler
       const combinedQueryParams = { ...(req.query || {}), ...(req.params || {}) } as Record<string, string | number | boolean | Date | Array<string | number | boolean | Date>>;
-      res.json(await libOperations.facet(ik, facetKey, combinedQueryParams));
-    } catch (err: any) {
-      this.logger.error('Error in Item Facet', { message: err?.message, stack: err?.stack });
-      res.status(500).json(err);
+      const result = await libOperations.facet(ik, facetKey, combinedQueryParams);
+      res.json(result);
+    } catch (error: any) {
+      this.logger.error('Error in getItemFacet', { error });
+      // Check if it's a validation error or facet not found error
+      if ((error.name === 'ValidationError' || error.message?.includes('not found')) && error.message) {
+        res.status(500).json({ error: 'Item Facet is not configured' });
+      } else {
+        res.status(500).json(error);
+      }
     }
   }
 
   private configure = (router: Router) => {
     const libOptions = this.lib.options;
     this.logger.debug('Configuring Router', { pkType: this.getPkType() });
-    router.get('/', this.findItems);
-    router.post('/', this.createItem);
+    router.get('/', this.wrapAsync(this.findItems));
+    router.post('/', this.wrapAsync(this.createItem));
 
     // Track registered routes to detect collisions
     const registeredAllActions = new Set<string>();
@@ -388,7 +388,7 @@ export class ItemRouter<
     if (this.options.allActions) {
       Object.keys(this.options.allActions).forEach((actionKey) => {
         this.logger.debug('Configuring Router All Action %s', actionKey);
-        router.post(`/${actionKey}`, this.postAllAction);
+        router.post(`/${actionKey}`, this.wrapAsync(this.postAllAction));
         registeredAllActions.add(actionKey);
       });
     }
@@ -401,7 +401,7 @@ export class ItemRouter<
           this.logger.warning('All Action name collision - router-level handler takes precedence', { actionKey });
         } else {
           this.logger.debug('Configuring Library All Action %s', actionKey);
-          router.post(`/${actionKey}`, this.postAllAction);
+          router.post(`/${actionKey}`, this.wrapAsync(this.postAllAction));
           registeredAllActions.add(actionKey);
         }
       });
@@ -412,7 +412,7 @@ export class ItemRouter<
     if (this.options.allFacets) {
       Object.keys(this.options.allFacets).forEach((facetKey) => {
         this.logger.debug('Configuring Router All Facet %s', facetKey);
-        router.get(`/${facetKey}`, this.getAllFacet);
+        router.get(`/${facetKey}`, this.wrapAsync(this.getAllFacet));
         registeredAllFacets.add(facetKey);
       });
     }
@@ -425,23 +425,23 @@ export class ItemRouter<
           this.logger.warning('All Facet name collision - router-level handler takes precedence', { facetKey });
         } else {
           this.logger.debug('Configuring Library All Facet %s', facetKey);
-          router.get(`/${facetKey}`, this.getAllFacet);
+          router.get(`/${facetKey}`, this.wrapAsync(this.getAllFacet));
           registeredAllFacets.add(facetKey);
         }
       });
     }
 
     const itemRouter = Router();
-    itemRouter.get('/', this.getItem);
-    itemRouter.put('/', this.updateItem);
-    itemRouter.delete('/', this.deleteItem);
+    itemRouter.get('/', this.wrapAsync(this.getItem));
+    itemRouter.put('/', this.wrapAsync(this.updateItem));
+    itemRouter.delete('/', this.wrapAsync(this.deleteItem));
 
     // Configure router-level item actions first (highest precedence)
     this.logger.default('Router Item Actions', { itemActions: this.options.actions });
     if (this.options.actions) {
       Object.keys(this.options.actions).forEach((actionKey) => {
         this.logger.debug('Configuring Router Item Action %s', actionKey);
-        itemRouter.post(`/${actionKey}`, this.postItemAction);
+        itemRouter.post(`/${actionKey}`, this.wrapAsync(this.postItemAction));
         registeredItemActions.add(actionKey);
       });
     }
@@ -454,7 +454,7 @@ export class ItemRouter<
           this.logger.warning('Item Action name collision - router-level handler takes precedence', { actionKey });
         } else {
           this.logger.debug('Configuring Library Item Action %s', actionKey);
-          itemRouter.post(`/${actionKey}`, this.postItemAction);
+          itemRouter.post(`/${actionKey}`, this.wrapAsync(this.postItemAction));
           registeredItemActions.add(actionKey);
         }
       });
@@ -465,7 +465,7 @@ export class ItemRouter<
     if (this.options.facets) {
       Object.keys(this.options.facets).forEach((facetKey) => {
         this.logger.debug('Configuring Router Item Facet %s', facetKey);
-        itemRouter.get(`/${facetKey}`, this.getItemFacet);
+        itemRouter.get(`/${facetKey}`, this.wrapAsync(this.getItemFacet));
         registeredItemFacets.add(facetKey);
       });
     }
@@ -478,7 +478,7 @@ export class ItemRouter<
           this.logger.warning('Item Facet name collision - router-level handler takes precedence', { facetKey });
         } else {
           this.logger.debug('Configuring Library Item Facet %s', facetKey);
-          itemRouter.get(`/${facetKey}`, this.getItemFacet);
+          itemRouter.get(`/${facetKey}`, this.wrapAsync(this.getItemFacet));
           registeredItemFacets.add(facetKey);
         }
       });
@@ -490,6 +490,10 @@ export class ItemRouter<
     if (this.childRouters) {
       this.configureChildRouters(itemRouter, this.childRouters);
     }
+
+    // Apply error handler as last middleware
+    router.use(this.errorHandler);
+    
     return router;
   }
 
@@ -542,6 +546,7 @@ export class ItemRouter<
 
     this.logger.debug('Deleting Item', { query: req.query, params: req.params, locals: res.locals });
     const ik = this.getIk(res);
+    
     try {
       const removedItem = await libOperations.remove(ik);
       if (removedItem) {
@@ -550,19 +555,12 @@ export class ItemRouter<
       } else {
         res.status(204).send();
       }
-    } catch (err: any) {
-      if (err instanceof NotFoundError) {
-        this.logger.error('Item Not Found for Delete', { ik, message: err?.message, stack: err?.stack });
-        res.status(404).json({
-          ik,
-          message: "Item Not Found",
-        });
+    } catch (error) {
+      if (error instanceof NotFoundError || (error as any).name === 'NotFoundError') {
+        res.status(404).json({ ik, message: "Item Not Found" });
       } else {
-        this.logger.error('General Error in Delete', { ik, message: err?.message, stack: err?.stack });
-        res.status(500).json({
-          ik,
-          message: "General Error",
-        });
+        this.logger.error('Error in deleteItem', { error });
+        res.status(500).json({ ik, message: "General Error" });
       }
     }
   };
@@ -578,31 +576,36 @@ export class ItemRouter<
     const libOperations = this.lib.operations;
     this.logger.debug('Getting Item', { query: req.query, params: req.params, locals: res.locals });
     const ik = this.getIk(res);
+    
     try {
       const fetchedItem = await libOperations.get(ik);
-      if (fetchedItem) {
-        const item = validatePK(fetchedItem, this.getPkType());
-        res.json(item);
-      } else {
-        this.logger.error('Item Not Found', { ik });
-        res.status(404).json({
-          ik,
-          message: "Item Not Found",
+      if (!fetchedItem) {
+        throw new ActionError({
+          code: 'NOT_FOUND',
+          message: `${this.keyType} not found`,
+          operation: {
+            type: 'get',
+            name: 'get',
+            params: { key: ik }
+          },
+          context: {
+            itemType: this.keyType
+          },
+          details: { retryable: false },
+          technical: {
+            timestamp: new Date().toISOString()
+          }
         });
       }
-    } catch (err: any) {
-      if (err instanceof NotFoundError) {
-        this.logger.error('Item Not Found', { ik, message: err?.message, stack: err?.stack });
-        res.status(404).json({
-          ik,
-          message: "Item Not Found",
-        });
+      
+      const item = validatePK(fetchedItem, this.getPkType());
+      res.json(item);
+    } catch (error) {
+      if (error instanceof NotFoundError || (error as any).name === 'NotFoundError') {
+        res.status(404).json({ ik, message: "Item Not Found" });
       } else {
-        this.logger.error('General Error', { ik, message: err?.message, stack: err?.stack });
-        res.status(500).json({
-          ik,
-          message: "General Error",
-        });
+        this.logger.error('Error in getItem', { error });
+        res.status(500).json({ ik, message: "General Error" });
       }
     }
   }
@@ -612,23 +615,17 @@ export class ItemRouter<
     this.logger.debug('Updating Item',
       { body: req?.body, query: req?.query, params: req?.params, locals: res?.locals });
     const ik = this.getIk(res);
+    
     try {
       const itemToUpdate = this.convertDates(req.body as Partial<Item<S, L1, L2, L3, L4, L5>>);
       const retItem = validatePK(await libOperations.update(ik, itemToUpdate), this.getPkType());
       res.json(retItem);
-    } catch (err: any) {
-      if (err instanceof NotFoundError) {
-        this.logger.error('Item Not Found for Update', { ik, message: err?.message, stack: err?.stack });
-        res.status(404).json({
-          ik,
-          message: "Item Not Found",
-        });
+    } catch (error) {
+      if (error instanceof NotFoundError || (error as any).name === 'NotFoundError') {
+        res.status(404).json({ ik, message: "Item Not Found" });
       } else {
-        this.logger.error('General Error in Update', { ik, message: err?.message, stack: err?.stack });
-        res.status(500).json({
-          ik,
-          message: "General Error",
-        });
+        this.logger.error('Error in updateItem', { error });
+        res.status(500).json({ ik, message: "General Error" });
       }
     }
   };

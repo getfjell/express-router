@@ -228,7 +228,7 @@ describe("PItemRouter", () => {
       expect(res.status).toHaveBeenCalledWith(500);
       expect(res.json).toHaveBeenCalledWith({
         success: false,
-        error: "Internal server error"
+        error: "Database connection failed"
       });
     });
 
@@ -638,16 +638,17 @@ describe("PItemRouter", () => {
       expect(res.status).toHaveBeenCalledWith(500);
       expect(res.json).toHaveBeenCalledWith({
         success: false,
-        error: "Internal server error"
+        error: "Library error"
       });
     });
 
     it('should handle findItems library failures', async () => {
       mockLib.operations.all.mockRejectedValue(new Error("Database error"));
 
-      // Since findItems doesn't have explicit error handling, this will throw
-      await expect(router['findItems'](req as Request, res as Response))
-        .rejects.toThrow("Database error");
+      await router['findItems'](req as Request, res as Response);
+
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.json).toHaveBeenCalledWith({ error: "Database error" });
     });
   });
 
