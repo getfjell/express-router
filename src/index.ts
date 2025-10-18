@@ -6,4 +6,11 @@ export * from "./PItemRouter.js";
 export * from './Instance.js';
 export * from './InstanceFactory.js';
 export * from './Registry.js';
-export type { Operations } from './Operations.js';
+
+// Error handling
+export * from './errorHandler.js';
+export * from './types.js';
+export * from './createApp.js';
+
+// Re-export Operations type from @fjell/lib for convenience
+export type { Operations } from '@fjell/lib';

@@ -103,9 +103,11 @@ describe("CItemRouter", () => {
     req.query = query;
     vi.spyOn(router, "getLocations").mockReturnValue(locKeyArray);
     mockLib.operations.all = vi.fn().mockRejectedValue(new Error("Test error"));
-    await expect(router['findItems'](req, res)).rejects.toThrow("Test error");
+    await router['findItems'](req, res);
     expect(router.getLocations).toHaveBeenCalledWith(res);
     expect(mockLib.operations.all).toHaveBeenCalledWith(expect.any(Object), locKeyArray);
+    expect(res.status).toHaveBeenCalledWith(500);
+    expect(res.json).toHaveBeenCalledWith({ error: "Test error" });
   });
 
   it("should create an item and return it as JSON", async () => {
