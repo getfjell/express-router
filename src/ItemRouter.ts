@@ -544,8 +544,12 @@ export class ItemRouter<
     const ik = this.getIk(res);
     try {
       const removedItem = await libOperations.remove(ik);
-      const item = validatePK(removedItem, this.getPkType());
-      res.json(item);
+      if (removedItem) {
+        const item = validatePK(removedItem, this.getPkType());
+        res.json(item);
+      } else {
+        res.status(204).send();
+      }
     } catch (err: any) {
       if (err instanceof NotFoundError) {
         this.logger.error('Item Not Found for Delete', { ik, message: err?.message, stack: err?.stack });
@@ -575,9 +579,17 @@ export class ItemRouter<
     this.logger.debug('Getting Item', { query: req.query, params: req.params, locals: res.locals });
     const ik = this.getIk(res);
     try {
-      // TODO: What error does validate PK throw, when can that fail?
-      const item = validatePK(await libOperations.get(ik), this.getPkType());
-      res.json(item);
+      const fetchedItem = await libOperations.get(ik);
+      if (fetchedItem) {
+        const item = validatePK(fetchedItem, this.getPkType());
+        res.json(item);
+      } else {
+        this.logger.error('Item Not Found', { ik });
+        res.status(404).json({
+          ik,
+          message: "Item Not Found",
+        });
+      }
     } catch (err: any) {
       if (err instanceof NotFoundError) {
         this.logger.error('Item Not Found', { ik, message: err?.message, stack: err?.stack });

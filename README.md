@@ -4,6 +4,32 @@
 
 Fjell Express Router provides a powerful abstraction layer for creating Express.js REST APIs that automatically handle CRUD operations for complex, hierarchical data models. Built on the Fjell framework, it enables rapid development of enterprise-grade APIs with built-in support for nested resources, business logic integration, and type-safe operations.
 
+## 🎉 Version 3.0 - Core Operations Integration
+
+**Version 3.0** introduces seamless integration with `@fjell/core` Operations interface, providing:
+
+- **Unified Interface**: Works directly with the standardized Operations interface from `@fjell/core`
+- **Better Type Safety**: Enhanced TypeScript support with explicit method types
+- **Cross-Package Compatibility**: Compatible with all Fjell packages (@fjell/lib, @fjell/cache, @fjell/client-api)
+- **Automatic REST API**: Generate complete REST endpoints from any Operations implementation
+- **Consistent Routing**: Same routing behavior across all Operations sources
+
+### What Changed in v3.0
+
+The router now works with any Operations implementation from the Fjell ecosystem:
+
+```typescript
+import { createOperationsRouter } from '@fjell/express-router';
+import { createLibrary } from '@fjell/lib';
+
+// Works with @fjell/lib Operations
+const library = createLibrary(registry, { keyType: 'user' }, userOperations, userOptions);
+const router = new PItemRouter(library, 'user');
+app.use('/api/users', router.getRouter());
+```
+
+**Migration is seamless** - existing code continues to work without changes. See [MIGRATION_v3.md](./MIGRATION_v3.md) for details.
+
 ## Features
 
 - **Automatic CRUD Routes**: Generate complete REST endpoints with minimal configuration
