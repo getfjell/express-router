@@ -137,7 +137,7 @@ describe("ItemRouter", () => {
         findOne: vi.fn(),
         action: vi.fn().mockImplementation(async (ik, actionKey, body) => {
           if (actionKey === 'customAction') {
-            return [{ customAction: true, ...testItem }, []];
+            return { customAction: true, ...testItem };
           }
           throw new Error('Action not found');
         }),
@@ -149,7 +149,7 @@ describe("ItemRouter", () => {
         }),
         allAction: vi.fn().mockImplementation(async (allActionKey, allActionParams) => {
           if (allActionKey === 'customAllAction') {
-            return [{ allAction: true, ...testItem }, []];
+            return { allAction: true, ...testItem };
           }
           throw new Error('All Action not found');
         }),

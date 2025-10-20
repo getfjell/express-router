@@ -234,7 +234,7 @@ export class ItemRouter<
       }
 
       // Fallback to library handler
-      const [result] = await libOperations.allAction(allActionKey, req.body, this.getLocations(res));
+      const result = await libOperations.allAction(allActionKey, req.body, this.getLocations(res));
       res.json(result);
     } catch (error: any) {
       this.logger.error('Error in postAllAction', { error });
@@ -316,7 +316,7 @@ export class ItemRouter<
       }
 
       // Fallback to library handler
-      const [result] = await libOperations.action(ik, actionKey, req.body);
+      const result = await libOperations.action(ik, actionKey, req.body);
       res.json(result);
     } catch (error: any) {
       this.logger.error('Error in postItemAction', { error });
@@ -493,7 +493,7 @@ export class ItemRouter<
 
     // Apply error handler as last middleware
     router.use(this.errorHandler);
-    
+
     return router;
   }
 
@@ -546,7 +546,7 @@ export class ItemRouter<
 
     this.logger.debug('Deleting Item', { query: req.query, params: req.params, locals: res.locals });
     const ik = this.getIk(res);
-    
+
     try {
       const removedItem = await libOperations.remove(ik);
       if (removedItem) {
@@ -576,7 +576,7 @@ export class ItemRouter<
     const libOperations = this.lib.operations;
     this.logger.debug('Getting Item', { query: req.query, params: req.params, locals: res.locals });
     const ik = this.getIk(res);
-    
+
     try {
       const fetchedItem = await libOperations.get(ik);
       if (!fetchedItem) {
@@ -597,7 +597,7 @@ export class ItemRouter<
           }
         });
       }
-      
+
       const item = validatePK(fetchedItem, this.getPkType());
       res.json(item);
     } catch (error) {
@@ -615,7 +615,7 @@ export class ItemRouter<
     this.logger.debug('Updating Item',
       { body: req?.body, query: req?.query, params: req?.params, locals: res?.locals });
     const ik = this.getIk(res);
-    
+
     try {
       const itemToUpdate = this.convertDates(req.body as Partial<Item<S, L1, L2, L3, L4, L5>>);
       const retItem = validatePK(await libOperations.update(ik, itemToUpdate), this.getPkType());
