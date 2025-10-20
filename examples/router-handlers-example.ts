@@ -1,8 +1,7 @@
 
-import { CItemRouter, createRegistry, PItemRouter } from '../src';
+import { CItemRouter, PItemRouter } from '../src';
 import { ComKey, Item, PriKey } from '@fjell/core';
 import express from 'express';
-import { Request, Response } from 'express';
 
 // Define data models
 interface User extends Item<'user'> {
@@ -40,15 +39,15 @@ const userOperations = {
 };
 
 const postOperations = {
-  create: async (item: Post, _options: { locations: any[] }) => ({ ...item, id: `post_${Date.now()}` }),
+  create: async (item: Post) => ({ ...item, id: `post_${Date.now()}` }),
   get: async (ik: ComKey<'post', 'user'>) => ({ id: ik.pk, title: 'Sample Post', content: 'Sample content', authorId: 'user_1' }),
   update: async (ik: ComKey<'post', 'user'>, item: Partial<Post>) => ({ id: ik.pk, title: 'Sample Post', content: 'Sample content', authorId: 'user_1', ...item }),
   remove: async (ik: ComKey<'post', 'user'>) => ({ id: ik.pk, title: 'Sample Post', content: 'Sample content', authorId: 'user_1' }),
-  all: async (_query: any, _locations: any[]) => [
+  all: async () => [
     { id: 'post_1', title: 'Sample Post 1', content: 'Sample content 1', authorId: 'user_1' },
     { id: 'post_2', title: 'Sample Post 2', content: 'Sample content 2', authorId: 'user_1' }
   ],
-  find: async (_finder: string, _params: any, _locations: any[]) => [
+  find: async () => [
     { id: 'post_1', title: 'Sample Post 1', content: 'Sample content 1', authorId: 'user_1' }
   ],
   action: async (ik: ComKey<'post', 'user'>, action: string, body: any) => ({ message: `Library action: ${action}`, postId: ik.pk, body }),
@@ -60,8 +59,6 @@ const postOperations = {
 // Create Express app and registry
 const app = express();
 app.use(express.json());
-
-const _registry = createRegistry();
 
 // Create instances
 const userInstance = {
@@ -112,7 +109,7 @@ const postInstance = {
 const userRouter = new PItemRouter(userInstance, 'user', {
   // Router-level action handlers - aligned with library operation signatures
   actions: {
-    activate: async (ik: PriKey<'user'>, actionParams: any, _context: { req: Request, res: Response }) => {
+    activate: async (ik: PriKey<'user'>, actionParams: any) => {
       console.log('Router-level activate action called for user:', ik.pk);
       console.log('Action params:', actionParams);
       // Custom logic: send activation email, update status, etc.
@@ -124,7 +121,7 @@ const userRouter = new PItemRouter(userInstance, 'user', {
       };
       return result;
     },
-    deactivate: async (ik: PriKey<'user'>, actionParams: any, _context: { req: Request, res: Response }) => {
+    deactivate: async (ik: PriKey<'user'>, actionParams: any) => {
       console.log('Router-level deactivate action called for user:', ik.pk);
       console.log('Action params:', actionParams);
       // Custom logic: send deactivation notification, update status, etc.
@@ -140,7 +137,7 @@ const userRouter = new PItemRouter(userInstance, 'user', {
 
   // Router-level facet handlers - aligned with library operation signatures
   facets: {
-    profile: async (ik: PriKey<'user'>, facetParams: any, _context: { req: Request, res: Response }) => {
+    profile: async (ik: PriKey<'user'>, facetParams: any) => {
       console.log('Router-level profile facet called for user:', ik.pk);
       console.log('Facet params:', facetParams);
       // Custom logic: aggregate data from multiple sources
@@ -151,7 +148,7 @@ const userRouter = new PItemRouter(userInstance, 'user', {
         socialInfo: { followers: 150, following: 75 }
       };
     },
-    stats: async (ik: PriKey<'user'>, facetParams: any, _context: { req: Request, res: Response }) => {
+    stats: async (ik: PriKey<'user'>, facetParams: any) => {
       console.log('Router-level stats facet called for user:', ik.pk);
       console.log('Facet params:', facetParams);
       // Custom logic: calculate statistics from multiple data sources
@@ -167,7 +164,7 @@ const userRouter = new PItemRouter(userInstance, 'user', {
 
   // Router-level all action handlers - aligned with library operation signatures
   allActions: {
-    bulkActivate: async (allActionParams: any, locations: any, _context: { req: Request, res: Response }) => {
+    bulkActivate: async (allActionParams: any, locations: any) => {
       console.log('Router-level bulk activate action called');
       console.log('All action params:', allActionParams);
       console.log('Locations:', locations);
@@ -180,7 +177,7 @@ const userRouter = new PItemRouter(userInstance, 'user', {
         externalServiceCalled: true
       };
     },
-    bulkDeactivate: async (allActionParams: any, locations: any, _context: { req: Request, res: Response }) => {
+    bulkDeactivate: async (allActionParams: any, locations: any) => {
       console.log('Router-level bulk deactivate action called');
       console.log('All action params:', allActionParams);
       console.log('Locations:', locations);
@@ -197,7 +194,7 @@ const userRouter = new PItemRouter(userInstance, 'user', {
 
   // Router-level all facet handlers - aligned with library operation signatures
   allFacets: {
-    userStats: async (allFacetParams: any, locations: any, _context: { req: Request, res: Response }) => {
+    userStats: async (allFacetParams: any, locations: any) => {
       console.log('Router-level user stats facet called');
       console.log('All facet params:', allFacetParams);
       console.log('Locations:', locations);
@@ -210,7 +207,7 @@ const userRouter = new PItemRouter(userInstance, 'user', {
         systemHealth: 'excellent'
       };
     },
-    userCount: async (_allFacetParams: any, _locations: any, _context: { req: Request, res: Response }) => {
+    userCount: async () => {
       console.log('Router-level user count facet called');
       // Custom logic: real-time count from cache
       return {
@@ -225,7 +222,7 @@ const userRouter = new PItemRouter(userInstance, 'user', {
 const postRouter = new CItemRouter(postInstance, 'post', userRouter, {
   // Router-level action handlers for posts - aligned with library operation signatures
   actions: {
-    publish: async (ik: ComKey<'post', 'user'>, actionParams: any, _context: { req: Request, res: Response }) => {
+    publish: async (ik: ComKey<'post', 'user'>, actionParams: any) => {
       console.log('Router-level publish action called for post:', ik.pk);
       console.log('Action params:', actionParams);
       // Custom logic: publish to social media, send notifications
@@ -238,7 +235,7 @@ const postRouter = new CItemRouter(postInstance, 'post', userRouter, {
         notificationsSent: true
       };
     },
-    unpublish: async (ik: ComKey<'post', 'user'>, actionParams: any, _context: { req: Request, res: Response }) => {
+    unpublish: async (ik: ComKey<'post', 'user'>, actionParams: any) => {
       console.log('Router-level unpublish action called for post:', ik.pk);
       console.log('Action params:', actionParams);
       // Custom logic: remove from social media, send notifications
@@ -255,7 +252,7 @@ const postRouter = new CItemRouter(postInstance, 'post', userRouter, {
 
   // Router-level facet handlers for posts - aligned with library operation signatures
   facets: {
-    analytics: async (ik: ComKey<'post', 'user'>, facetParams: any, _context: { req: Request, res: Response }) => {
+    analytics: async (ik: ComKey<'post', 'user'>, facetParams: any) => {
       console.log('Router-level analytics facet called for post:', ik.pk);
       console.log('Facet params:', facetParams);
       // Custom logic: aggregate analytics from multiple sources
@@ -269,7 +266,7 @@ const postRouter = new CItemRouter(postInstance, 'post', userRouter, {
         topReferrers: ['twitter.com', 'facebook.com', 'linkedin.com']
       };
     },
-    comments: async (ik: ComKey<'post', 'user'>, facetParams: any, _context: { req: Request, res: Response }) => {
+    comments: async (ik: ComKey<'post', 'user'>, facetParams: any) => {
       console.log('Router-level comments facet called for post:', ik.pk);
       console.log('Facet params:', facetParams);
       // Custom logic: fetch comments from external service
@@ -286,7 +283,7 @@ const postRouter = new CItemRouter(postInstance, 'post', userRouter, {
 
   // Router-level all action handlers for posts - aligned with library operation signatures
   allActions: {
-    bulkPublish: async (allActionParams: any, locations: any, _context: { req: Request, res: Response }) => {
+    bulkPublish: async (allActionParams: any, locations: any) => {
       console.log('Router-level bulk publish action called');
       console.log('All action params:', allActionParams);
       console.log('Locations:', locations);
@@ -299,7 +296,7 @@ const postRouter = new CItemRouter(postInstance, 'post', userRouter, {
         platformsUpdated: ['twitter', 'facebook', 'linkedin']
       };
     },
-    bulkUnpublish: async (allActionParams: any, locations: any, _context: { req: Request, res: Response }) => {
+    bulkUnpublish: async (allActionParams: any, locations: any) => {
       console.log('Router-level bulk unpublish action called');
       console.log('All action params:', allActionParams);
       console.log('Locations:', locations);
@@ -316,7 +313,7 @@ const postRouter = new CItemRouter(postInstance, 'post', userRouter, {
 
   // Router-level all facet handlers for posts - aligned with library operation signatures
   allFacets: {
-    postStats: async (allFacetParams: any, locations: any, _context: { req: Request, res: Response }) => {
+    postStats: async (allFacetParams: any, locations: any) => {
       console.log('Router-level post stats facet called');
       console.log('All facet params:', allFacetParams);
       console.log('Locations:', locations);
@@ -330,7 +327,7 @@ const postRouter = new CItemRouter(postInstance, 'post', userRouter, {
         topCategories: ['technology', 'business', 'lifestyle']
       };
     },
-    postCount: async (allFacetParams: any, locations: any, _context: { req: Request, res: Response }) => {
+    postCount: async (allFacetParams: any, locations: any) => {
       console.log('Router-level post count facet called');
       console.log('All facet params:', allFacetParams);
       console.log('Locations:', locations);

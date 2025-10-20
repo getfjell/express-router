@@ -1,25 +1,25 @@
 {
   "name": "@fjell/express-router",
+  "description": "Express Router for Fjell",
   "version": "4.4.57-dev.0",
-  "license": "Apache-2.0",
   "keywords": [
     "express",
     "router",
     "fjell"
   ],
-  "description": "Express Router for Fjell",
+  "license": "Apache-2.0",
   "engines": {
     "node": ">=21"
   },
-  "main": "dist/index.js",
-  "module": "dist/index.js",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     }
   },
-  "type": "module",
   "scripts": {
     "build": "npm run clean && node build.js",
     "dev": "nodemon --watch src --ext ts --exec 'npm run build'",

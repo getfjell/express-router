@@ -2,11 +2,10 @@ import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   test: {
+    globals: true,
+    environment: 'node',
+    include: ['tests/**/*.{test,spec}.ts'],
     setupFiles: ['./tests/setup.ts'],
-    include: [
-      'tests/**/*.test.ts',
-      'tests/**/*.spec.ts',
-    ],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html', 'lcov'],
@@ -16,12 +15,14 @@ export default defineConfig({
         'examples/**/*.ts',
       ],
       exclude: [
-        'node_modules/',
-        'tests/',
+        'node_modules/**',
+        'tests/**',
         'src/index.ts',
-        'dist/**/*.ts',
-        'dist/**/*.js',
-        'esbuild.config.js',
+        '**/*.d.ts',
+        'dist/**',
+        'build.js',
+        'docs/**',
+        'coverage/**',
         'vitest.config.ts',
         'eslint.config.mjs',
       ],
@@ -34,6 +35,5 @@ export default defineConfig({
         },
       },
     },
-    environment: 'node',
   },
 });
