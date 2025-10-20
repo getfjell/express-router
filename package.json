@@ -1,25 +1,25 @@
 {
   "name": "@fjell/express-router",
-  "version": "4.4.56",
-  "license": "Apache-2.0",
+  "description": "Express Router for Fjell",
+  "version": "4.4.57",
   "keywords": [
     "express",
     "router",
     "fjell"
   ],
-  "description": "Express Router for Fjell",
+  "license": "Apache-2.0",
   "engines": {
     "node": ">=21"
   },
-  "main": "dist/index.js",
-  "module": "dist/index.js",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     }
   },
-  "type": "module",
   "scripts": {
     "build": "npm run clean && node build.js",
     "dev": "nodemon --watch src --ext ts --exec 'npm run build'",
@@ -34,17 +34,17 @@
     "docs:test": "cd docs && npm run test"
   },
   "dependencies": {
-    "@fjell/core": "^4.4.50",
-    "@fjell/lib": "^4.4.58",
-    "@fjell/logging": "^4.4.49",
-    "@fjell/registry": "^4.4.52",
+    "@fjell/core": "^4.4.51",
+    "@fjell/lib": "^4.4.59",
+    "@fjell/logging": "^4.4.50",
+    "@fjell/registry": "^4.4.53",
     "deepmerge": "^4.3.1",
     "express": "^5.1.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.1",
     "@eslint/js": "^9.33.0",
-    "@fjell/eslint-config": "^1.1.25",
+    "@fjell/eslint-config": "^1.1.28",
     "@tsconfig/recommended": "^1.0.10",
     "@types/express": "^5.0.3",
     "@types/node": "^24.2.1",

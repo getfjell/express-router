@@ -501,8 +501,8 @@ describe('Router Handlers Example', () => {
 
       expect(typeof userRouterOptions.actions.activate).toBe('function');
       expect(typeof userRouterOptions.actions.deactivate).toBe('function');
-      expect(userRouterOptions.actions.activate.length).toBe(3); // ik, actionParams, context
-      expect(userRouterOptions.actions.deactivate.length).toBe(3);
+      expect(userRouterOptions.actions.activate.length).toBe(2); // ik, actionParams
+      expect(userRouterOptions.actions.deactivate.length).toBe(2);
     });
 
     it('should have correctly typed facet handlers for users', () => {
@@ -510,8 +510,8 @@ describe('Router Handlers Example', () => {
 
       expect(typeof userRouterOptions.facets.profile).toBe('function');
       expect(typeof userRouterOptions.facets.stats).toBe('function');
-      expect(userRouterOptions.facets.profile.length).toBe(3); // ik, facetParams, context
-      expect(userRouterOptions.facets.stats.length).toBe(3);
+      expect(userRouterOptions.facets.profile.length).toBe(2); // ik, facetParams
+      expect(userRouterOptions.facets.stats.length).toBe(2);
     });
 
     it('should have correctly typed all action handlers for users', () => {
@@ -519,8 +519,8 @@ describe('Router Handlers Example', () => {
 
       expect(typeof userRouterOptions.allActions.bulkActivate).toBe('function');
       expect(typeof userRouterOptions.allActions.bulkDeactivate).toBe('function');
-      expect(userRouterOptions.allActions.bulkActivate.length).toBe(3); // allActionParams, locations, context
-      expect(userRouterOptions.allActions.bulkDeactivate.length).toBe(3);
+      expect(userRouterOptions.allActions.bulkActivate.length).toBe(2); // allActionParams, locations
+      expect(userRouterOptions.allActions.bulkDeactivate.length).toBe(2);
     });
 
     it('should have correctly typed all facet handlers for users', () => {
@@ -528,8 +528,8 @@ describe('Router Handlers Example', () => {
 
       expect(typeof userRouterOptions.allFacets.userStats).toBe('function');
       expect(typeof userRouterOptions.allFacets.userCount).toBe('function');
-      expect(userRouterOptions.allFacets.userStats.length).toBe(3); // allFacetParams, locations, context
-      expect(userRouterOptions.allFacets.userCount.length).toBe(3);
+      expect(userRouterOptions.allFacets.userStats.length).toBe(2); // allFacetParams, locations
+      expect(userRouterOptions.allFacets.userCount.length).toBe(0); // No parameters
     });
 
     it('should have correctly typed handlers for posts', () => {
