@@ -381,11 +381,13 @@ app.get('/examples', (req, res) => {
   });
 });
 
-// Start server
-const PORT = 3000;
-app.listen(PORT, () => {
-  console.log(`Router Handlers Example server running on http://localhost:${PORT}`);
-  console.log('Visit http://localhost:3000/examples for endpoint documentation');
-});
+// Start server only if running directly (not imported for testing)
+if (require.main === module) {
+  const PORT = 3000;
+  app.listen(PORT, () => {
+    console.log(`Router Handlers Example server running on http://localhost:${PORT}`);
+    console.log('Visit http://localhost:3000/examples for endpoint documentation');
+  });
+}
 
 export { app, userRouter, postRouter };
