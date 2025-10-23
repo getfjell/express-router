@@ -43,11 +43,13 @@ vi.mock('../src/Instance', () => ({
 
 // Mock ItemRouter
 vi.mock('../src/ItemRouter', () => ({
-  ItemRouter: vi.fn().mockImplementation(() => ({
-    getPkType: () => 'test',
-    configure: vi.fn(),
-    getRouter: vi.fn()
-  }))
+  ItemRouter: vi.fn().mockImplementation(function() {
+    return {
+      getPkType: () => 'test',
+      configure: vi.fn(),
+      getRouter: vi.fn()
+    };
+  })
 }));
 
 type TestItem = Item<"test", "container">;
