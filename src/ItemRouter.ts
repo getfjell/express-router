@@ -372,8 +372,13 @@ export class ItemRouter<
   }
 
   private configure = (router: Router) => {
-    const libOptions = this.lib.options;
-    this.logger.debug('Configuring Router', { pkType: this.getPkType() });
+    if (!this.lib) {
+      this.logger.error('Library is undefined in configure');
+      throw new Error('Library is required for router configuration');
+    }
+    // Ensure options exists - library should have options but handle case where it doesn't
+    const libOptions = (this.lib as any).options || {};
+    this.logger.debug('Configuring Router', { pkType: this.getPkType(), hasOptions: !!libOptions });
     router.get('/', this.wrapAsync(this.findItems));
     router.post('/', this.wrapAsync(this.createItem));
 
@@ -555,8 +560,31 @@ export class ItemRouter<
       } else {
         res.status(204).send();
       }
-    } catch (error) {
-      if (error instanceof NotFoundError || (error as any).name === 'NotFoundError') {
+    } catch (error: any) {
+      // Check for NotFoundError from various packages
+      // Also check error.cause since errors may be wrapped
+      const originalError = error?.cause || error;
+      const isNotFound =
+        error instanceof NotFoundError ||
+        originalError instanceof NotFoundError ||
+        error?.name === 'NotFoundError' ||
+        originalError?.name === 'NotFoundError' ||
+        error?.errorInfo?.code === 'NOT_FOUND' ||
+        originalError?.errorInfo?.code === 'NOT_FOUND' ||
+        (error?.message && (
+          error.message.includes('not found') ||
+          error.message.includes('Cannot remove') ||
+          error.message.includes('Cannot update') ||
+          error.message.toLowerCase().includes('not found')
+        )) ||
+        (originalError?.message && (
+          originalError.message.includes('not found') ||
+          originalError.message.includes('Cannot remove') ||
+          originalError.message.includes('Cannot update') ||
+          originalError.message.toLowerCase().includes('not found')
+        ));
+      
+      if (isNotFound) {
         res.status(404).json({ ik, message: "Item Not Found" });
       } else {
         this.logger.error('Error in deleteItem', { error });
@@ -600,8 +628,31 @@ export class ItemRouter<
 
       const item = validatePK(fetchedItem, this.getPkType());
       res.json(item);
-    } catch (error) {
-      if (error instanceof NotFoundError || (error as any).name === 'NotFoundError') {
+    } catch (error: any) {
+      // Check for NotFoundError from various packages
+      // Also check error.cause since errors may be wrapped
+      const originalError = error?.cause || error;
+      const isNotFound =
+        error instanceof NotFoundError ||
+        originalError instanceof NotFoundError ||
+        error?.name === 'NotFoundError' ||
+        originalError?.name === 'NotFoundError' ||
+        error?.errorInfo?.code === 'NOT_FOUND' ||
+        originalError?.errorInfo?.code === 'NOT_FOUND' ||
+        (error?.message && (
+          error.message.includes('not found') ||
+          error.message.includes('Cannot remove') ||
+          error.message.includes('Cannot update') ||
+          error.message.toLowerCase().includes('not found')
+        )) ||
+        (originalError?.message && (
+          originalError.message.includes('not found') ||
+          originalError.message.includes('Cannot remove') ||
+          originalError.message.includes('Cannot update') ||
+          originalError.message.toLowerCase().includes('not found')
+        ));
+      
+      if (isNotFound) {
         res.status(404).json({ ik, message: "Item Not Found" });
       } else {
         this.logger.error('Error in getItem', { error });
@@ -620,8 +671,32 @@ export class ItemRouter<
       const itemToUpdate = this.convertDates(req.body as Partial<Item<S, L1, L2, L3, L4, L5>>);
       const retItem = validatePK(await libOperations.update(ik, itemToUpdate), this.getPkType());
       res.json(retItem);
-    } catch (error) {
-      if (error instanceof NotFoundError || (error as any).name === 'NotFoundError') {
+    } catch (error: any) {
+      // Check for NotFoundError from various packages
+      // Also check error.cause since errors may be wrapped
+      const originalError = error?.cause || error;
+      const isNotFound =
+        error instanceof NotFoundError ||
+        originalError instanceof NotFoundError ||
+        error?.name === 'NotFoundError' ||
+        originalError?.name === 'NotFoundError' ||
+        error?.errorInfo?.code === 'NOT_FOUND' ||
+        originalError?.errorInfo?.code === 'NOT_FOUND' ||
+        (error?.message && (
+          error.message.includes('not found') ||
+          error.message.includes('Cannot remove') ||
+          error.message.includes('Cannot update') ||
+          error.message.includes('Update Failed') ||
+          error.message.toLowerCase().includes('not found')
+        )) ||
+        (originalError?.message && (
+          originalError.message.includes('not found') ||
+          originalError.message.includes('Cannot remove') ||
+          originalError.message.includes('Cannot update') ||
+          originalError.message.toLowerCase().includes('not found')
+        ));
+      
+      if (isNotFound) {
         res.status(404).json({ ik, message: "Item Not Found" });
       } else {
         this.logger.error('Error in updateItem', { error });

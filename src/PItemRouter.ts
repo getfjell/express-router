@@ -30,15 +30,58 @@ export class PItemRouter<T extends Item<S>, S extends string> extends ItemRouter
       this.logger.default('Created Item %j', item);
       res.status(201).json(item);
     } catch (error: any) {
-      this.logger.error('Error in createItem', { error });
-      // Check for validation errors
-      if (error.name === 'CreateValidationError' || error.name === 'ValidationError' ||
-          error.name === 'SequelizeValidationError' ||
-          (error.message && (error.message.includes('validation') ||
-           error.message.includes('required') ||
-           error.message.includes('cannot be null') ||
-           error.message.includes('notNull Violation')))) {
-        res.status(400).json({ success: false, error: error.message || "Validation failed" });
+      // Check for validation errors - check multiple patterns
+      // Also check error.cause since errors may be wrapped
+      const originalError = error?.cause || error;
+      
+      // Log error details for debugging
+      this.logger.error('Error in createItem', {
+        error,
+        errorName: error?.name,
+        errorMessage: error?.message,
+        originalErrorName: originalError?.name,
+        originalErrorMessage: originalError?.message,
+        errorCode: error?.errorInfo?.code,
+        originalErrorCode: originalError?.errorInfo?.code
+      });
+      const isValidationError =
+        error.name === 'CreateValidationError' ||
+        originalError?.name === 'CreateValidationError' ||
+        error.name === 'ValidationError' ||
+        originalError?.name === 'ValidationError' ||
+        error.name === 'SequelizeValidationError' ||
+        originalError?.name === 'SequelizeValidationError' ||
+        error?.errorInfo?.code === 'VALIDATION_ERROR' ||
+        originalError?.errorInfo?.code === 'VALIDATION_ERROR' ||
+        (error.message && (
+          error.message.includes('validation') ||
+          error.message.includes('required') ||
+          error.message.includes('cannot be null') ||
+          error.message.includes('notNull Violation') ||
+          error.message.includes('Required field') ||
+          error.message.includes('Referenced item does not exist') ||
+          error.message.includes('Foreign key constraint') ||
+          error.message.includes('Operation failed') ||
+          error.message.includes('preCreate') ||
+          error.message.includes('preUpdate') ||
+          error.message.includes('Create Validation Failed')
+        )) ||
+        (originalError?.message && (
+          originalError.message.includes('validation') ||
+          originalError.message.includes('required') ||
+          originalError.message.includes('cannot be null') ||
+          originalError.message.includes('notNull Violation') ||
+          originalError.message.includes('Required field') ||
+          originalError.message.includes('Referenced item does not exist') ||
+          originalError.message.includes('Foreign key constraint') ||
+          originalError.message.includes('preCreate') ||
+          originalError.message.includes('preUpdate') ||
+          originalError.message.includes('Create Validation Failed')
+        ));
+      
+      if (isValidationError) {
+        const errorMessage = originalError?.message || error.message || "Validation failed";
+        res.status(400).json({ success: false, error: errorMessage });
       } else {
         res.status(500).json({ success: false, error: error.message || "Internal server error" });
       }
