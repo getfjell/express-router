@@ -602,7 +602,7 @@ describe('Full Application Example', () => {
     it('should handle non-existent customer lookup', async () => {
       await supertest(app)
         .get('/api/customers/non-existent-id')
-        .expect(500);
+        .expect(404);
     });
 
     it('should validate customer creation with missing fields', async () => {
@@ -623,13 +623,13 @@ describe('Full Application Example', () => {
       await supertest(app)
         .put('/api/customers/non-existent')
         .send(updates)
-        .expect(500);
+        .expect(404);
     });
 
     it('should handle customer deletion for non-existent customer', async () => {
       await supertest(app)
         .delete('/api/customers/non-existent')
-        .expect(500);
+        .expect(404);
     });
 
     it('should preserve customer key when updating', async () => {
@@ -784,7 +784,7 @@ describe('Full Application Example', () => {
     it('should handle non-existent product lookup', async () => {
       await supertest(app)
         .get('/api/products/non-existent-id')
-        .expect(500);
+        .expect(404);
     });
 
     it('should validate product creation with missing fields', async () => {
@@ -818,13 +818,13 @@ describe('Full Application Example', () => {
       await supertest(app)
         .put('/api/products/non-existent')
         .send(updates)
-        .expect(500);
+        .expect(404);
     });
 
     it('should handle product deletion for non-existent product', async () => {
       await supertest(app)
         .delete('/api/products/non-existent')
-        .expect(500);
+        .expect(404);
     });
 
     it('should preserve product key when updating', async () => {
@@ -1038,7 +1038,7 @@ describe('Full Application Example', () => {
     it('should handle non-existent order lookup', async () => {
       await supertest(app)
         .get('/api/customers/cust-1/orders/non-existent')
-        .expect(500);
+        .expect(404);
     });
 
     it('should handle order update for non-existent order', async () => {
@@ -1047,13 +1047,13 @@ describe('Full Application Example', () => {
       await supertest(app)
         .put('/api/customers/cust-1/orders/non-existent')
         .send(updates)
-        .expect(500);
+        .expect(404);
     });
 
     it('should handle order deletion for non-existent order', async () => {
       await supertest(app)
         .delete('/api/customers/cust-1/orders/non-existent')
-        .expect(500);
+        .expect(404);
     });
 
     it('should preserve order key when updating', async () => {
