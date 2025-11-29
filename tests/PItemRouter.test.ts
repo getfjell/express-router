@@ -267,9 +267,13 @@ describe("PItemRouter", () => {
   });
 
   it("should find items", async () => {
-    mockLib.operations.all.mockResolvedValue([testItem]);
+    const mockResult = {
+      items: [testItem],
+      metadata: { total: 1, returned: 1, offset: 0, hasMore: false }
+    };
+    mockLib.operations.all.mockResolvedValue(mockResult);
     const response = await router['findItems'](req as Request, res as Response);
-    expect(res.json).toHaveBeenCalledWith([testItem]);
+    expect(res.json).toHaveBeenCalledWith(mockResult);
   });
 
   it("should return the correct primary key", () => {
@@ -305,7 +309,10 @@ describe("PItemRouter", () => {
       await router['findItems'](req as Request, res as Response);
 
       expect(mockLib.operations.find).toHaveBeenCalledWith('testFinder', {});
-      expect(res.json).toHaveBeenCalledWith(mockItems);
+      expect(res.json).toHaveBeenCalledWith({
+        items: mockItems,
+        metadata: expect.objectContaining({ total: 1, returned: 1 })
+      });
     });
 
     it('should handle malformed JSON in finderParams', async () => {
@@ -341,7 +348,10 @@ describe("PItemRouter", () => {
       await router['findItems'](req as Request, res as Response);
 
       expect(mockLib.operations.find).toHaveBeenCalledWith('complexFinder', complexParams);
-      expect(res.json).toHaveBeenCalledWith(mockItems);
+      expect(res.json).toHaveBeenCalledWith({
+        items: mockItems,
+        metadata: expect.objectContaining({ total: 1, returned: 1 })
+      });
     });
 
     it('should validate primary keys in returned items', async () => {
@@ -366,18 +376,26 @@ describe("PItemRouter", () => {
 
     it('should handle empty query object', async () => {
       const mockItems = [testItem];
-      mockLib.operations.all.mockResolvedValue(mockItems);
+      const mockResult = {
+        items: mockItems,
+        metadata: { total: 1, returned: 1, offset: 0, hasMore: false }
+      };
+      mockLib.operations.all.mockResolvedValue(mockResult);
       req.query = {};
 
       await router['findItems'](req as Request, res as Response);
 
-      expect(mockLib.operations.all).toHaveBeenCalledWith(expect.any(Object));
-      expect(res.json).toHaveBeenCalledWith(mockItems);
+      expect(mockLib.operations.all).toHaveBeenCalledWith(expect.any(Object), [], {});
+      expect(res.json).toHaveBeenCalledWith(mockResult);
     });
 
     it('should handle query with multiple parameters', async () => {
       const mockItems = [testItem];
-      mockLib.operations.all.mockResolvedValue(mockItems);
+      const mockResult = {
+        items: mockItems,
+        metadata: { total: 1, returned: 1, offset: 5, hasMore: false }
+      };
+      mockLib.operations.all.mockResolvedValue(mockResult);
       req.query = {
         limit: '10',
         offset: '5',
@@ -387,8 +405,8 @@ describe("PItemRouter", () => {
 
       await router['findItems'](req as Request, res as Response);
 
-      expect(mockLib.operations.all).toHaveBeenCalledWith(expect.any(Object));
-      expect(res.json).toHaveBeenCalledWith(mockItems);
+      expect(mockLib.operations.all).toHaveBeenCalledWith(expect.any(Object), [], { limit: 10, offset: 5 });
+      expect(res.json).toHaveBeenCalledWith(mockResult);
     });
 
     it('should handle findOne returning undefined when one=true', async () => {
@@ -402,7 +420,10 @@ describe("PItemRouter", () => {
       await router['findItems'](req as Request, res as Response);
 
       expect(mockLib.findOne).toHaveBeenCalledWith('testFinder', { param: 'value' });
-      expect(res.json).toHaveBeenCalledWith([]);
+      expect(res.json).toHaveBeenCalledWith({
+        items: [],
+        metadata: expect.objectContaining({ total: 0, returned: 0 })
+      });
     });
 
   });
@@ -427,7 +448,10 @@ describe("PItemRouter", () => {
       await router['findItems'](req as Request, res as Response);
 
       expect(mockLib.operations.find).toHaveBeenCalledWith('testFinder', { param: 'value' });
-      expect(res.json).toHaveBeenCalledWith(mockItems);
+      expect(res.json).toHaveBeenCalledWith({
+        items: mockItems,
+        metadata: expect.objectContaining({ total: 1, returned: 1 })
+      });
     });
 
     it('should find items using query when no finder exists', async () => {
@@ -440,15 +464,19 @@ describe("PItemRouter", () => {
       }];
 
       // @ts-ignore
-      mockLib.operations.all.mockResolvedValue(mockItems);
+      const mockResult = {
+        items: mockItems,
+        metadata: { total: 1, returned: 1, offset: 0, hasMore: false }
+      };
+      mockLib.operations.all.mockResolvedValue(mockResult);
       req.query = {
         limit: '10'
       };
 
       await router['findItems'](req as Request, res as Response);
 
-      expect(mockLib.operations.all).toHaveBeenCalledWith(expect.any(Object));
-      expect(res.json).toHaveBeenCalledWith(mockItems);
+      expect(mockLib.operations.all).toHaveBeenCalledWith(expect.any(Object), [], { limit: 10 });
+      expect(res.json).toHaveBeenCalledWith(mockResult);
     });
 
     it('should find single item using findOne when one=true', async () => {
@@ -471,7 +499,10 @@ describe("PItemRouter", () => {
 
       expect(mockLib.findOne).toHaveBeenCalledWith('testFinder', { param: 'value' });
       expect(mockLib.operations.find).not.toHaveBeenCalled();
-      expect(res.json).toHaveBeenCalledWith([mockItem]);
+      expect(res.json).toHaveBeenCalledWith({
+        items: [mockItem],
+        metadata: expect.objectContaining({ total: 1, returned: 1 })
+      });
     });
 
     it('should return empty array when findOne returns null', async () => {
@@ -485,7 +516,10 @@ describe("PItemRouter", () => {
       await router['findItems'](req as Request, res as Response);
 
       expect(mockLib.findOne).toHaveBeenCalledWith('testFinder', { param: 'value' });
-      expect(res.json).toHaveBeenCalledWith([]);
+      expect(res.json).toHaveBeenCalledWith({
+        items: [],
+        metadata: expect.objectContaining({ total: 0, returned: 0 })
+      });
     });
 
     it('should use find when one parameter is not true', async () => {
@@ -508,7 +542,10 @@ describe("PItemRouter", () => {
       await router['findItems'](req as Request, res as Response);
 
       expect(mockLib.operations.find).toHaveBeenCalledWith('testFinder', { param: 'value' });
-      expect(res.json).toHaveBeenCalledWith(mockItems);
+      expect(res.json).toHaveBeenCalledWith({
+        items: mockItems,
+        metadata: expect.objectContaining({ total: 1, returned: 1 })
+      });
     });
   });
 

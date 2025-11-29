@@ -1,5 +1,5 @@
 import {
-  ComKey, Item, ItemQuery, LocKey, LocKeyArray, paramsToQuery, PriKey, QueryParams, validatePK
+  AllOperationResult, AllOptions, ComKey, Item, ItemQuery, LocKey, LocKeyArray, paramsToQuery, PriKey, QueryParams, validatePK
 } from "@fjell/core";
 import { Library, NotFoundError } from "@fjell/lib";
 import { Request, Response } from "express";
@@ -88,8 +88,6 @@ export class CItemRouter<
     const one = query['one'] as string;
 
     try {
-      let items: Item<S, L1, L2, L3, L4, L5>[] = [];
-
       if (finder) {
         // If finder is defined?  Call a finder.
         this.logger.default('Finding Items with Finder', { finder, finderParams, one });
@@ -105,24 +103,55 @@ export class CItemRouter<
           return;
         }
 
+        let items: Item<S, L1, L2, L3, L4, L5>[] = [];
         if (one === 'true') {
           const item = await (this.lib as any).findOne(finder, parsedParams, this.getLocations(res));
           items = item ? [item] : [];
         } else {
           items = await libOperations.find(finder, parsedParams, this.getLocations(res));
         }
+
+        // For finder queries, wrap in AllOperationResult format for consistency
+        const validatedItems = items.map((item: Item<S, L1, L2, L3, L4, L5>) => validatePK(item, this.getPkType()));
+        const result: AllOperationResult<Item<S, L1, L2, L3, L4, L5>> = {
+          items: validatedItems,
+          metadata: {
+            total: validatedItems.length,
+            returned: validatedItems.length,
+            offset: 0,
+            hasMore: false
+          }
+        };
+        res.json(result);
       } else {
         // TODO: This is once of the more important places to perform some validaation and feedback
         const itemQuery: ItemQuery = paramsToQuery(req.query as QueryParams);
         const locations = this.getLocations(res);
         this.logger.debug('Finding Items with Query: %j', itemQuery);
         this.logger.debug('Location keys being passed: %j', locations);
-        items = await libOperations.all(itemQuery, locations);
-        this.logger.debug('Found %d Items with Query', items.length);
-      }
+        
+        // Parse pagination options from query params
+        const allOptions: AllOptions = {};
+        if (req.query.limit) {
+          allOptions.limit = parseInt(req.query.limit as string, 10);
+        }
+        if (req.query.offset) {
+          allOptions.offset = parseInt(req.query.offset as string, 10);
+        }
+        
+        // libOperations.all() now returns AllOperationResult<V>
+        const result = await libOperations.all(itemQuery, locations, allOptions);
+        this.logger.debug('Found %d Items with Query', result.items.length);
 
-      const validatedItems = items.map((item: Item<S, L1, L2, L3, L4, L5>) => validatePK(item, this.getPkType()));
-      res.json(validatedItems);
+        // Validate PKs on returned items
+        const validatedItems = result.items.map((item: Item<S, L1, L2, L3, L4, L5>) => validatePK(item, this.getPkType()));
+        
+        // Return full AllOperationResult structure with validated items
+        res.json({
+          items: validatedItems,
+          metadata: result.metadata
+        });
+      }
     } catch (error: any) {
       this.logger.error('Error in findItems', { error });
       if (error instanceof NotFoundError || error?.name === 'NotFoundError') {

@@ -12,7 +12,7 @@
  */
 
 import express, { Application } from 'express';
-import { ComKey, Item, PriKey, UUID } from '@fjell/core';
+import { AllOperationResult, ComKey, Item, PriKey, UUID } from '@fjell/core';
 import { CItemRouter, createRegistry, PItemRouter } from '../src';
 import { NotFoundError } from '@fjell/lib';
 
@@ -198,8 +198,12 @@ const initializeSampleData = () => {
 
 // Create mock operations
 const createOrgOperations = () => ({
-  async all() {
-    return Array.from(mockOrgStorage.values());
+  async all(query?: any, locations?: any, allOptions?: any): Promise<AllOperationResult<Organization>> {
+    const orgs = Array.from(mockOrgStorage.values());
+    return {
+      items: orgs,
+      metadata: { total: orgs.length, returned: orgs.length, offset: 0, hasMore: false }
+    };
   },
   async get(key: PriKey<'organization'>) {
     const org = mockOrgStorage.get(String(key.pk));
@@ -260,8 +264,9 @@ const createOrgOperations = () => ({
 });
 
 const createDeptOperations = () => ({
-  async all(query?: any, locations?: any) {
+  async all(query?: any, locations?: any, allOptions?: any): Promise<AllOperationResult<Department>> {
     const departments = Array.from(mockDeptStorage.values());
+    let filtered = departments;
     if (locations && locations.length >= 1) {
       const orgId = String(locations[0]?.lk || '');
       // Check if the parent organization exists
@@ -269,9 +274,12 @@ const createDeptOperations = () => ({
       if (!org) {
         throw new NotFoundError('get', { kta: ['organization', '', '', '', '', ''], scopes: [] }, { kt: 'organization', pk: orgId as UUID });
       }
-      return departments.filter(dept => dept.organizationId === orgId);
+      filtered = departments.filter(dept => dept.organizationId === orgId);
     }
-    return departments;
+    return {
+      items: filtered,
+      metadata: { total: filtered.length, returned: filtered.length, offset: 0, hasMore: false }
+    };
   },
   async get(key: ComKey<'department', 'organization'>) {
     const dept = mockDeptStorage.get(String(key.pk));
@@ -340,8 +348,9 @@ const createDeptOperations = () => ({
 });
 
 const createEmpOperations = () => ({
-  async all(query?: any, locations?: any) {
+  async all(query?: any, locations?: any, allOptions?: any): Promise<AllOperationResult<Employee>> {
     const employees = Array.from(mockEmpStorage.values());
+    let filtered = employees;
     if (locations && locations.length >= 2) {
       // The locations array is: [{kt: 'department', lk: 'dept-1'}, {kt: 'organization', lk: 'org-1'}]
       const deptId = String(locations[0]?.lk || '');
@@ -359,9 +368,12 @@ const createEmpOperations = () => ({
         throw new NotFoundError('get', { kta: ['department', '', '', '', '', ''], scopes: [] }, { kt: 'department', pk: deptId as UUID });
       }
 
-      return employees.filter(emp => emp.organizationId === orgId && emp.departmentId === deptId);
+      filtered = employees.filter(emp => emp.organizationId === orgId && emp.departmentId === deptId);
     }
-    return employees;
+    return {
+      items: filtered,
+      metadata: { total: filtered.length, returned: filtered.length, offset: 0, hasMore: false }
+    };
   },
   async get(key: ComKey<'employee', 'organization', 'department'>) {
     const emp = mockEmpStorage.get(String(key.pk));
@@ -505,16 +517,16 @@ export const runNestedRouterExample = async (): Promise<{ app: Application }> =>
   // Additional hierarchy summary routes
   app.get('/api/hierarchy', async (req, res) => {
     try {
-      const orgs = await mockOrgInstance.operations.all();
-      const depts = await mockDeptInstance.operations.all();
-      const employees = await mockEmpInstance.operations.all();
+      const orgsResult = await mockOrgInstance.operations.all();
+      const deptsResult = await mockDeptInstance.operations.all();
+      const employeesResult = await mockEmpInstance.operations.all();
 
-      const hierarchy = orgs.map((org: Organization) => {
-        const orgDepts = depts.filter((dept: Department) => dept.organizationId === org.id);
+      const hierarchy = orgsResult.items.map((org: Organization) => {
+        const orgDepts = deptsResult.items.filter((dept: Department) => dept.organizationId === org.id);
         return {
           organization: org,
           departments: orgDepts.map((dept: Department) => {
-            const deptEmployees = employees.filter((emp: Employee) => emp.departmentId === dept.id);
+            const deptEmployees = employeesResult.items.filter((emp: Employee) => emp.departmentId === dept.id);
             return {
               department: dept,
               employees: deptEmployees
@@ -531,22 +543,22 @@ export const runNestedRouterExample = async (): Promise<{ app: Application }> =>
 
   app.get('/api/stats', async (req, res) => {
     try {
-      const orgs = await mockOrgInstance.operations.all();
-      const depts = await mockDeptInstance.operations.all();
-      const employees = await mockEmpInstance.operations.all();
+      const orgsResult = await mockOrgInstance.operations.all();
+      const deptsResult = await mockDeptInstance.operations.all();
+      const employeesResult = await mockEmpInstance.operations.all();
 
       const stats = {
         totals: {
-          organizations: orgs.length,
-          departments: depts.length,
-          employees: employees.length
+          organizations: orgsResult.items.length,
+          departments: deptsResult.items.length,
+          employees: employeesResult.items.length
         },
-        organizationTypes: orgs.reduce((acc: any, org: Organization) => {
+        organizationTypes: orgsResult.items.reduce((acc: any, org: Organization) => {
           acc[org.type] = (acc[org.type] || 0) + 1;
           return acc;
         }, {}),
-        averageDepartmentBudget: depts.reduce((sum: number, dept: Department) => sum + dept.budget, 0) / depts.length,
-        totalPayroll: employees.reduce((sum: number, emp: Employee) => sum + emp.salary, 0)
+        averageDepartmentBudget: deptsResult.items.reduce((sum: number, dept: Department) => sum + dept.budget, 0) / deptsResult.items.length,
+        totalPayroll: employeesResult.items.reduce((sum: number, emp: Employee) => sum + emp.salary, 0)
       };
 
       res.json(stats);

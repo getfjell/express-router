@@ -55,13 +55,15 @@ describe('Basic Router Example', () => {
 
   describe('Sample Data Initialization', () => {
     it('should initialize with sample users', async () => {
-      const users = await mockUserInstance.operations.all();
+      const result = await mockUserInstance.operations.all();
 
-      expect(Array.isArray(users)).toBe(true);
-      expect(users.length).toBeGreaterThan(0);
+      expect(result).toHaveProperty('items');
+      expect(result).toHaveProperty('metadata');
+      expect(Array.isArray(result.items)).toBe(true);
+      expect(result.items.length).toBeGreaterThan(0);
 
-      const alice = users.find((user: User) => user.name === 'Alice Johnson');
-      const bob = users.find((user: User) => user.name === 'Bob Smith');
+      const alice = result.items.find((user: User) => user.name === 'Alice Johnson');
+      const bob = result.items.find((user: User) => user.name === 'Bob Smith');
 
       expect(alice).toBeDefined();
       expect(alice.email).toBe('alice@example.com');
@@ -73,13 +75,15 @@ describe('Basic Router Example', () => {
     });
 
     it('should initialize with sample tasks', async () => {
-      const tasks = await mockTaskInstance.operations.all();
+      const result = await mockTaskInstance.operations.all();
 
-      expect(Array.isArray(tasks)).toBe(true);
-      expect(tasks.length).toBeGreaterThan(0);
+      expect(result).toHaveProperty('items');
+      expect(result).toHaveProperty('metadata');
+      expect(Array.isArray(result.items)).toBe(true);
+      expect(result.items.length).toBeGreaterThan(0);
 
-      const setupTask = tasks.find((task: Task) => task.title === 'Setup project documentation');
-      const reviewTask = tasks.find((task: Task) => task.title === 'Review code changes');
+      const setupTask = result.items.find((task: Task) => task.title === 'Setup project documentation');
+      const reviewTask = result.items.find((task: Task) => task.title === 'Review code changes');
 
       expect(setupTask).toBeDefined();
       expect(setupTask.status).toBe('in-progress');
@@ -95,12 +99,14 @@ describe('Basic Router Example', () => {
 
   describe('User Operations', () => {
     it('should get all users', async () => {
-      const users = await mockUserInstance.operations.all();
+      const result = await mockUserInstance.operations.all();
 
-      expect(Array.isArray(users)).toBe(true);
-      expect(users.length).toBeGreaterThan(0);
+      expect(result).toHaveProperty('items');
+      expect(result).toHaveProperty('metadata');
+      expect(Array.isArray(result.items)).toBe(true);
+      expect(result.items.length).toBeGreaterThan(0);
 
-      const user = users[0];
+      const user = result.items[0];
       expect(user).toHaveProperty('id');
       expect(user).toHaveProperty('name');
       expect(user).toHaveProperty('email');
@@ -186,12 +192,14 @@ describe('Basic Router Example', () => {
 
   describe('Task Operations', () => {
     it('should get all tasks', async () => {
-      const tasks = await mockTaskInstance.operations.all();
+      const result = await mockTaskInstance.operations.all();
 
-      expect(Array.isArray(tasks)).toBe(true);
-      expect(tasks.length).toBeGreaterThan(0);
+      expect(result).toHaveProperty('items');
+      expect(result).toHaveProperty('metadata');
+      expect(Array.isArray(result.items)).toBe(true);
+      expect(result.items.length).toBeGreaterThan(0);
 
-      const task = tasks[0];
+      const task = result.items[0];
       expect(task).toHaveProperty('id');
       expect(task).toHaveProperty('title');
       expect(task).toHaveProperty('description');
@@ -447,7 +455,8 @@ describe('Basic Router Example', () => {
         .get('/api/users')
         .expect(200);
 
-      expect(Array.isArray(response.body)).toBe(true);
+      expect(response.body).toHaveProperty('items');
+      expect(Array.isArray(response.body.items)).toBe(true);
     });
 
     it('should mount task router on /api/tasks', async () => {
@@ -456,7 +465,8 @@ describe('Basic Router Example', () => {
         .get('/api/tasks')
         .expect(200);
 
-      expect(Array.isArray(response.body)).toBe(true);
+      expect(response.body).toHaveProperty('items');
+      expect(Array.isArray(response.body.items)).toBe(true);
     });
   });
 
@@ -528,8 +538,8 @@ describe('Basic Router Example', () => {
       } as User);
 
       // Verify it appears in all users
-      const allUsers = await mockUserInstance.operations.all();
-      const foundUser = allUsers.find((u: User) => u.id === newUser.id);
+      const allUsersResult = await mockUserInstance.operations.all();
+      const foundUser = allUsersResult.items.find((u: User) => u.id === newUser.id);
       expect(foundUser).toBeDefined();
       expect(foundUser.name).toBe('Test User');
 
@@ -543,8 +553,8 @@ describe('Basic Router Example', () => {
       const retrievedUser = await mockUserInstance.operations.get({ kt: 'user', pk: newUser.id });
       expect(retrievedUser.name).toBe('Updated Test User');
 
-      const allUsersAfterUpdate = await mockUserInstance.operations.all();
-      const foundUpdatedUser = allUsersAfterUpdate.find((u: User) => u.id === newUser.id);
+      const allUsersAfterUpdateResult = await mockUserInstance.operations.all();
+      const foundUpdatedUser = allUsersAfterUpdateResult.items.find((u: User) => u.id === newUser.id);
       expect(foundUpdatedUser?.name).toBe('Updated Test User');
     });
 
@@ -591,10 +601,10 @@ describe('Basic Router Example', () => {
       const creationTime = Date.now() - startTime;
 
       const fetchStart = Date.now();
-      const allUsers = await mockUserInstance.operations.all();
+      const allUsersResult = await mockUserInstance.operations.all();
       const fetchTime = Date.now() - fetchStart;
 
-      expect(allUsers.length).toBeGreaterThanOrEqual(iterations);
+      expect(allUsersResult.items.length).toBeGreaterThanOrEqual(iterations);
       expect(creationTime).toBeLessThan(1000); // Should complete within 1 second
       expect(fetchTime).toBeLessThan(100); // Should fetch within 100ms
     });
@@ -617,8 +627,8 @@ describe('Basic Router Example', () => {
       const creationMemoryIncrease = afterCreationMemory.heapUsed - initialMemory.heapUsed;
 
       // Fetch all tasks
-      const allTasks = await mockTaskInstance.operations.all();
-      expect(allTasks.length).toBeGreaterThanOrEqual(largeDatasetSize);
+      const allTasksResult = await mockTaskInstance.operations.all();
+      expect(allTasksResult.items.length).toBeGreaterThanOrEqual(largeDatasetSize);
 
       const finalMemory = process.memoryUsage();
 
@@ -796,10 +806,12 @@ describe('Basic Router Example', () => {
           .get('/api/users')
           .expect(200);
 
-        expect(Array.isArray(response.body)).toBe(true);
-        expect(response.body.length).toBeGreaterThan(0);
+        expect(response.body).toHaveProperty('items');
+        expect(response.body).toHaveProperty('metadata');
+        expect(Array.isArray(response.body.items)).toBe(true);
+        expect(response.body.items.length).toBeGreaterThan(0);
 
-        const user = response.body[0];
+        const user = response.body.items[0];
         expect(user).toHaveProperty('id');
         expect(user).toHaveProperty('name');
         expect(user).toHaveProperty('email');
@@ -887,10 +899,12 @@ describe('Basic Router Example', () => {
           .get('/api/tasks')
           .expect(200);
 
-        expect(Array.isArray(response.body)).toBe(true);
-        expect(response.body.length).toBeGreaterThan(0);
+        expect(response.body).toHaveProperty('items');
+        expect(response.body).toHaveProperty('metadata');
+        expect(Array.isArray(response.body.items)).toBe(true);
+        expect(response.body.items.length).toBeGreaterThan(0);
 
-        const task = response.body[0];
+        const task = response.body.items[0];
         expect(task).toHaveProperty('id');
         expect(task).toHaveProperty('title');
         expect(task).toHaveProperty('description');

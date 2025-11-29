@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
+ 
 import { CItemRouter } from "../src/CItemRouter";
 import { ComKey, Item, LocKeyArray, PriKey, UUID } from "@fjell/core";
 import { Request, Response } from "express";
@@ -89,13 +89,20 @@ describe("CItemRouter", () => {
   it("should find items and return them as JSON", async () => {
     const query = { some: "query" };
     const items = [testItem];
+    const mockResult = {
+      items,
+      metadata: { total: 1, returned: 1, offset: 0, hasMore: false }
+    };
     req.query = query;
     vi.spyOn(router, "getLocations").mockReturnValue(locKeyArray);
-    mockLib.operations.all = vi.fn().mockResolvedValue(items);
+    mockLib.operations.all = vi.fn().mockResolvedValue(mockResult);
     await router['findItems'](req, res);
     expect(router.getLocations).toHaveBeenCalledWith(res);
-    expect(mockLib.operations.all).toHaveBeenCalledWith(expect.any(Object), locKeyArray);
-    expect(res.json).toHaveBeenCalledWith(items.map((item) => expect.any(Object)));
+    expect(mockLib.operations.all).toHaveBeenCalledWith(expect.any(Object), locKeyArray, {});
+    expect(res.json).toHaveBeenCalledWith({
+      items: expect.arrayContaining([expect.any(Object)]),
+      metadata: expect.objectContaining({ total: 1 })
+    });
   });
 
   it("should handle errors in findItems", async () => {
@@ -105,7 +112,7 @@ describe("CItemRouter", () => {
     mockLib.operations.all = vi.fn().mockRejectedValue(new Error("Test error"));
     await router['findItems'](req, res);
     expect(router.getLocations).toHaveBeenCalledWith(res);
-    expect(mockLib.operations.all).toHaveBeenCalledWith(expect.any(Object), locKeyArray);
+    expect(mockLib.operations.all).toHaveBeenCalledWith(expect.any(Object), locKeyArray, {});
     expect(res.status).toHaveBeenCalledWith(500);
     expect(res.json).toHaveBeenCalledWith({ error: "Test error" });
   });
@@ -152,15 +159,22 @@ describe("CItemRouter", () => {
       req.query = { finder: 'testFinder', finderParams: JSON.stringify({ param: 'value' }) };
       await router['findItems'](req as Request, res as Response);
       expect(mockLib.operations.find).toHaveBeenCalledWith('testFinder', { param: 'value' }, mockParentLKA);
-      expect(res.json).toHaveBeenCalledWith(mockItems);
+      expect(res.json).toHaveBeenCalledWith({
+        items: mockItems,
+        metadata: expect.objectContaining({ total: 1, returned: 1 })
+      });
     });
 
     it('should find items using query when no finder exists', async () => {
-      mockLib.operations.all.mockResolvedValue(mockItems);
+      const mockResult = {
+        items: mockItems,
+        metadata: { total: 1, returned: 1, offset: 0, hasMore: false }
+      };
+      mockLib.operations.all.mockResolvedValue(mockResult);
       req.query = { limit: '10' };
       await router['findItems'](req as Request, res as Response);
-      expect(mockLib.operations.all).toHaveBeenCalledWith({ "limit": 10 }, mockParentLKA);
-      expect(res.json).toHaveBeenCalledWith(mockItems);
+      expect(mockLib.operations.all).toHaveBeenCalledWith({ "limit": 10 }, mockParentLKA, { limit: 10 });
+      expect(res.json).toHaveBeenCalledWith(mockResult);
     });
 
     it('should find single item using findOne when one=true', async () => {
@@ -170,7 +184,10 @@ describe("CItemRouter", () => {
       await router['findItems'](req as Request, res as Response);
       expect(mockLib.findOne).toHaveBeenCalledWith('testFinder', { param: 'value' }, mockParentLKA);
       expect(mockLib.operations.find).not.toHaveBeenCalled();
-      expect(res.json).toHaveBeenCalledWith([mockItem]);
+      expect(res.json).toHaveBeenCalledWith({
+        items: [mockItem],
+        metadata: expect.objectContaining({ total: 1, returned: 1 })
+      });
     });
 
     it('should return empty array when findOne returns null', async () => {
@@ -178,7 +195,10 @@ describe("CItemRouter", () => {
       req.query = { finder: 'testFinder', finderParams: JSON.stringify({ param: 'value' }), one: 'true' };
       await router['findItems'](req as Request, res as Response);
       expect(mockLib.findOne).toHaveBeenCalledWith('testFinder', { param: 'value' }, mockParentLKA);
-      expect(res.json).toHaveBeenCalledWith([]);
+      expect(res.json).toHaveBeenCalledWith({
+        items: [],
+        metadata: expect.objectContaining({ total: 0, returned: 0 })
+      });
     });
 
     it('should use find when one parameter is not true', async () => {
@@ -187,7 +207,10 @@ describe("CItemRouter", () => {
       await router['findItems'](req as Request, res as Response);
       expect(mockLib.operations.find).toHaveBeenCalledWith('testFinder', { param: 'value' }, mockParentLKA);
       expect(mockLib.findOne).not.toHaveBeenCalled();
-      expect(res.json).toHaveBeenCalledWith(mockItems);
+      expect(res.json).toHaveBeenCalledWith({
+        items: mockItems,
+        metadata: expect.objectContaining({ total: 1, returned: 1 })
+      });
     });
 
     // Test JSON parsing errors and edge cases

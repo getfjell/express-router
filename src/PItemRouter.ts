@@ -1,4 +1,4 @@
-import { Item, ItemQuery, paramsToQuery, PriKey, QueryParams, validatePK } from "@fjell/core";
+import { AllOperationResult, AllOptions, Item, ItemQuery, paramsToQuery, PriKey, QueryParams, validatePK } from "@fjell/core";
 import { Request, Response } from "express";
 import { ItemRouter, ItemRouterOptions } from "./ItemRouter.js";
 import { Library, NotFoundError } from "@fjell/lib";
@@ -93,8 +93,6 @@ export class PItemRouter<T extends Item<S>, S extends string> extends ItemRouter
     this.logger.default('Finding Items', { query: req.query, params: req.params, locals: res.locals });
 
     try {
-      let items: Item<S>[] = [];
-
       const query: ParsedQuery = req.query as unknown as ParsedQuery;
       const finder = query['finder'] as string;
       const finderParams = query['finderParams'] as string;
@@ -115,21 +113,52 @@ export class PItemRouter<T extends Item<S>, S extends string> extends ItemRouter
           return;
         }
 
+        let items: Item<S>[] = [];
         if (one === 'true') {
           const item = await (this.lib as any).findOne(finder, parsedParams);
           items = item ? [item] : [];
         } else {
           items = await libOperations.find(finder, parsedParams);
         }
+
+        // For finder queries, wrap in AllOperationResult format for consistency
+        const validatedItems = items.map((item: Item<S>) => validatePK(item, this.getPkType()));
+        const result: AllOperationResult<Item<S>> = {
+          items: validatedItems,
+          metadata: {
+            total: validatedItems.length,
+            returned: validatedItems.length,
+            offset: 0,
+            hasMore: false
+          }
+        };
+        res.json(result);
       } else {
         // TODO: This is once of the more important places to perform some validaation and feedback
         const itemQuery: ItemQuery = paramsToQuery(req.query as QueryParams);
         this.logger.default('Finding Items with a query %j', itemQuery);
-        items = await libOperations.all(itemQuery);
+        
+        // Parse pagination options from query params
+        const allOptions: AllOptions = {};
+        if (req.query.limit) {
+          allOptions.limit = parseInt(req.query.limit as string, 10);
+        }
+        if (req.query.offset) {
+          allOptions.offset = parseInt(req.query.offset as string, 10);
+        }
+        
+        // libOperations.all() now returns AllOperationResult<V>
+        const result = await libOperations.all(itemQuery, [], allOptions);
+        
+        // Validate PKs on returned items
+        const validatedItems = result.items.map((item: Item<S>) => validatePK(item, this.getPkType()));
+        
+        // Return full AllOperationResult structure with validated items
+        res.json({
+          items: validatedItems,
+          metadata: result.metadata
+        });
       }
-
-      const validatedItems = items.map((item: Item<S>) => validatePK(item, this.getPkType()));
-      res.json(validatedItems);
     } catch (error: any) {
       this.logger.error('Error in findItems', { error });
       if (error instanceof NotFoundError || error?.name === 'NotFoundError') {

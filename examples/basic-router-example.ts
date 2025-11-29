@@ -11,7 +11,7 @@
  * Run this example with: npx tsx examples/basic-router-example.ts
  */
 
-import { Item, PriKey, UUID } from '@fjell/core';
+import { AllOperationResult, Item, PriKey, UUID } from '@fjell/core';
 import { NotFoundError } from '@fjell/lib';
 import express, { Application } from 'express';
 import { createRegistry, PItemRouter } from '../src';
@@ -118,9 +118,13 @@ const initializeSampleData = () => {
 // Create mock operations for Users and Tasks
 const createUserOperations = () => {
   return {
-    async all() {
+    async all(query?: any, locations?: any, allOptions?: any): Promise<AllOperationResult<User>> {
       console.log('📦 UserOperations.all() - Fetching all users...');
-      return Array.from(mockUserStorage.values());
+      const users = Array.from(mockUserStorage.values());
+      return {
+        items: users,
+        metadata: { total: users.length, returned: users.length, offset: 0, hasMore: false }
+      };
     },
 
     async get(key: PriKey<'user'>) {
@@ -195,9 +199,13 @@ const createUserOperations = () => {
 
 const createTaskOperations = () => {
   return {
-    async all() {
+    async all(query?: any, locations?: any, allOptions?: any): Promise<AllOperationResult<Task>> {
       console.log('📦 TaskOperations.all() - Fetching all tasks...');
-      return Array.from(mockTaskStorage.values());
+      const tasks = Array.from(mockTaskStorage.values());
+      return {
+        items: tasks,
+        metadata: { total: tasks.length, returned: tasks.length, offset: 0, hasMore: false }
+      };
     },
 
     async get(key: PriKey<'task'>) {
@@ -334,19 +342,19 @@ export const runBasicRouterExample = async (): Promise<{ app: Application; userR
   // Dashboard route showing summary data
   app.get('/api/dashboard', async (req, res) => {
     try {
-      const users = await mockUserInstance.operations.all();
-      const tasks = await mockTaskInstance.operations.all();
+      const usersResult = await mockUserInstance.operations.all();
+      const tasksResult = await mockTaskInstance.operations.all();
 
       const dashboard = {
         summary: {
-          totalUsers: users.length,
-          totalTasks: tasks.length,
-          completedTasks: tasks.filter((t: Task) => t.status === 'completed').length,
-          pendingTasks: tasks.filter((t: Task) => t.status === 'pending').length,
-          inProgressTasks: tasks.filter((t: Task) => t.status === 'in-progress').length
+          totalUsers: usersResult.items.length,
+          totalTasks: tasksResult.items.length,
+          completedTasks: tasksResult.items.filter((t: Task) => t.status === 'completed').length,
+          pendingTasks: tasksResult.items.filter((t: Task) => t.status === 'pending').length,
+          inProgressTasks: tasksResult.items.filter((t: Task) => t.status === 'in-progress').length
         },
-        users: users.map((u: User) => ({ id: u.id, name: u.name, role: u.role })),
-        recentTasks: tasks
+        users: usersResult.items.map((u: User) => ({ id: u.id, name: u.name, role: u.role })),
+        recentTasks: tasksResult.items
           .sort((a: Task, b: Task) => b.events.created.at.getTime() - a.events.created.at.getTime())
           .slice(0, 5)
       };
