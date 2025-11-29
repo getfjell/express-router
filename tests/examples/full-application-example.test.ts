@@ -519,8 +519,10 @@ describe('Full Application Example', () => {
         .get('/api/customers')
         .expect(200);
 
-      expect(Array.isArray(response.body)).toBe(true);
-      expect(response.body.length).toBeGreaterThan(0);
+      expect(response.body).toHaveProperty('items');
+      expect(response.body).toHaveProperty('metadata');
+      expect(Array.isArray(response.body.items)).toBe(true);
+      expect(response.body.items.length).toBeGreaterThan(0);
     });
 
     it('should return specific customer', async () => {
@@ -693,8 +695,10 @@ describe('Full Application Example', () => {
         .get('/api/products')
         .expect(200);
 
-      expect(Array.isArray(response.body)).toBe(true);
-      expect(response.body.length).toBeGreaterThan(0);
+      expect(response.body).toHaveProperty('items');
+      expect(response.body).toHaveProperty('metadata');
+      expect(Array.isArray(response.body.items)).toBe(true);
+      expect(response.body.items.length).toBeGreaterThan(0);
     });
 
     it('should return specific product', async () => {
@@ -903,7 +907,9 @@ describe('Full Application Example', () => {
         .get('/api/customers/cust-1/orders')
         .expect(200);
 
-      expect(Array.isArray(response.body)).toBe(true);
+      expect(response.body).toHaveProperty('items');
+      expect(response.body).toHaveProperty('metadata');
+      expect(Array.isArray(response.body.items)).toBe(true);
     });
 
     it('should return specific order', async () => {
@@ -1463,7 +1469,7 @@ describe('Full Application Example', () => {
         .get('/api/customers')
         .expect(200);
 
-      expect(dashboardResponse.body.summary.totalCustomers).toBe(customersResponse.body.length);
+      expect(dashboardResponse.body.summary.totalCustomers).toBe(customersResponse.body.items.length);
     });
 
     it('should calculate customer tiers correctly', async () => {
@@ -1475,7 +1481,7 @@ describe('Full Application Example', () => {
         .get('/api/dashboard')
         .expect(200);
 
-      const actualTierCounts = customersResponse.body.reduce((acc: any, customer: any) => {
+      const actualTierCounts = customersResponse.body.items.reduce((acc: any, customer: any) => {
         acc[customer.tier] = (acc[customer.tier] || 0) + 1;
         return acc;
       }, {});
@@ -1504,7 +1510,7 @@ describe('Full Application Example', () => {
         .get('/api/dashboard')
         .expect(200);
 
-      const customerIds = customersResponse.body.map((c: any) => c.id);
+      const customerIds = customersResponse.body.items.map((c: any) => c.id);
       const ordersWithValidCustomers = dashboardResponse.body.recentOrders.every((order: any) =>
         customerIds.includes(order.customerId)
       );

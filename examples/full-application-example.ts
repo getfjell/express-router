@@ -12,7 +12,7 @@
  */
 
 import express, { Application, NextFunction, Request, Response } from 'express';
-import { ComKey, Item, LocKey, PriKey, UUID } from '@fjell/core';
+import { AllOperationResult, ComKey, Item, LocKey, PriKey, UUID } from '@fjell/core';
 import { CItemRouter, createRegistry, PItemRouter } from '../src';
 
 // ===== Data Models =====
@@ -267,7 +267,13 @@ const initializeSampleData = () => {
 
 // ===== Mock Operations =====
 const createCustomerOperations = () => ({
-  async all() { return Array.from(mockCustomerStorage.values()); },
+  async all(query?: any, locations?: any, allOptions?: any): Promise<AllOperationResult<Customer>> {
+    const customers = Array.from(mockCustomerStorage.values());
+    return {
+      items: customers,
+      metadata: { total: customers.length, returned: customers.length, offset: 0, hasMore: false }
+    };
+  },
   async get(key: PriKey<'customer'>) {
     const customer = mockCustomerStorage.get(String(key.pk));
     if (!customer) throw new Error(`Customer not found: ${key.pk}`);
@@ -316,7 +322,13 @@ const createCustomerOperations = () => ({
 });
 
 const createProductOperations = () => ({
-  async all() { return Array.from(mockProductStorage.values()); },
+  async all(query?: any, locations?: any, allOptions?: any): Promise<AllOperationResult<Product>> {
+    const products = Array.from(mockProductStorage.values());
+    return {
+      items: products,
+      metadata: { total: products.length, returned: products.length, offset: 0, hasMore: false }
+    };
+  },
   async get(key: PriKey<'product'>) {
     const product = mockProductStorage.get(String(key.pk));
     if (!product) throw new Error(`Product not found: ${key.pk}`);
@@ -367,7 +379,13 @@ const createProductOperations = () => ({
 
 // Additional operations for contained items (simplified for brevity)
 const createOrderOperations = () => ({
-  async all() { return Array.from(mockOrderStorage.values()); },
+  async all(query?: any, locations?: any, allOptions?: any): Promise<AllOperationResult<Order>> {
+    const orders = Array.from(mockOrderStorage.values());
+    return {
+      items: orders,
+      metadata: { total: orders.length, returned: orders.length, offset: 0, hasMore: false }
+    };
+  },
   async get(key: ComKey<'order', 'customer'>) {
     const order = mockOrderStorage.get(String(key.pk));
     if (!order) throw new Error(`Order not found: ${key.pk}`);
@@ -626,27 +644,27 @@ export const runFullApplicationExample = async (): Promise<{ app: Application }>
   // Business logic routes
   app.get('/api/dashboard', async (req, res, next) => {
     try {
-      const customers = await customerInstance.operations.all();
-      const products = await productInstance.operations.all();
-      const orders = await orderInstance.operations.all();
+      const customersResult = await customerInstance.operations.all();
+      const productsResult = await productInstance.operations.all();
+      const ordersResult = await orderInstance.operations.all();
 
       const dashboard = {
         summary: {
-          totalCustomers: customers.length,
-          totalProducts: products.length,
-          totalOrders: orders.length,
-          revenue: orders.reduce((sum: number, order: Order) => sum + order.total, 0)
+          totalCustomers: customersResult.items.length,
+          totalProducts: productsResult.items.length,
+          totalOrders: ordersResult.items.length,
+          revenue: ordersResult.items.reduce((sum: number, order: Order) => sum + order.total, 0)
         },
-        customerTiers: customers.reduce((acc: any, customer: Customer) => {
+        customerTiers: customersResult.items.reduce((acc: any, customer: Customer) => {
           acc[customer.tier] = (acc[customer.tier] || 0) + 1;
           return acc;
         }, {}),
-        orderStatuses: orders.reduce((acc: any, order: Order) => {
+        orderStatuses: ordersResult.items.reduce((acc: any, order: Order) => {
           acc[order.status] = (acc[order.status] || 0) + 1;
           return acc;
         }, {}),
-        featuredProducts: products.filter((product: Product) => product.featured),
-        recentOrders: orders
+        featuredProducts: productsResult.items.filter((product: Product) => product.featured),
+        recentOrders: ordersResult.items
           .sort((a: Order, b: Order) => new Date(b.orderDate).getTime() - new Date(a.orderDate).getTime())
           .slice(0, 10)
       };
@@ -661,7 +679,8 @@ export const runFullApplicationExample = async (): Promise<{ app: Application }>
   app.get('/api/catalog', async (req, res, next) => {
     try {
       const { category, featured, minPrice, maxPrice, search } = req.query;
-      let products = await productInstance.operations.all();
+      const productsResult = await productInstance.operations.all();
+      let products = productsResult.items;
 
       if (category) {
         products = products.filter((p: Product) => p.category === category);

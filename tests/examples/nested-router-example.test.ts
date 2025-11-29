@@ -46,12 +46,14 @@ describe('Nested Router Example', () => {
     it('should initialize with sample organizations', async () => {
       const response = await supertest.get('/api/organizations');
       expect(response.status).toBe(200);
-      expect(Array.isArray(response.body)).toBe(true);
-      expect(response.body.length).toBeGreaterThan(0);
+      expect(response.body).toHaveProperty('items');
+      expect(response.body).toHaveProperty('metadata');
+      expect(Array.isArray(response.body.items)).toBe(true);
+      expect(response.body.items.length).toBeGreaterThan(0);
 
       // Check for expected sample organizations
-      const techCorp = response.body.find((org: Organization) => org.name === 'TechCorp Solutions');
-      const greenFuture = response.body.find((org: Organization) => org.name === 'Green Future Initiative');
+      const techCorp = response.body.items.find((org: Organization) => org.name === 'TechCorp Solutions');
+      const greenFuture = response.body.items.find((org: Organization) => org.name === 'Green Future Initiative');
 
       expect(techCorp).toBeDefined();
       expect(techCorp.type).toBe('enterprise');
@@ -65,12 +67,14 @@ describe('Nested Router Example', () => {
     it('should initialize with sample departments', async () => {
       const response = await supertest.get('/api/organizations/org-1/departments');
       expect(response.status).toBe(200);
-      expect(Array.isArray(response.body)).toBe(true);
-      expect(response.body.length).toBeGreaterThan(0);
+      expect(response.body).toHaveProperty('items');
+      expect(response.body).toHaveProperty('metadata');
+      expect(Array.isArray(response.body.items)).toBe(true);
+      expect(response.body.items.length).toBeGreaterThan(0);
 
       // Check for expected sample departments
-      const engineering = response.body.find((dept: Department) => dept.name === 'Engineering');
-      const marketing = response.body.find((dept: Department) => dept.name === 'Marketing');
+      const engineering = response.body.items.find((dept: Department) => dept.name === 'Engineering');
+      const marketing = response.body.items.find((dept: Department) => dept.name === 'Marketing');
 
       expect(engineering).toBeDefined();
       expect(engineering.budget).toBe(2000000);
@@ -84,11 +88,13 @@ describe('Nested Router Example', () => {
     it('should initialize with sample employees', async () => {
       const response = await supertest.get('/api/organizations/org-1/departments/dept-1/employees');
       expect(response.status).toBe(200);
-      expect(Array.isArray(response.body)).toBe(true);
-      expect(response.body.length).toBeGreaterThan(0);
+      expect(response.body).toHaveProperty('items');
+      expect(response.body).toHaveProperty('metadata');
+      expect(Array.isArray(response.body.items)).toBe(true);
+      expect(response.body.items.length).toBeGreaterThan(0);
 
       // Check for expected sample employees
-      const alice = response.body.find((emp: Employee) => emp.name === 'Alice Johnson');
+      const alice = response.body.items.find((emp: Employee) => emp.name === 'Alice Johnson');
       expect(alice).toBeDefined();
       expect(alice.position).toBe('Senior Software Engineer');
       expect(alice.salary).toBe(120000);
@@ -99,11 +105,13 @@ describe('Nested Router Example', () => {
     it('should get all organizations', async () => {
       const response = await supertest.get('/api/organizations');
       expect(response.status).toBe(200);
-      expect(Array.isArray(response.body)).toBe(true);
-      expect(response.body.length).toBeGreaterThan(0);
+      expect(response.body).toHaveProperty('items');
+      expect(response.body).toHaveProperty('metadata');
+      expect(Array.isArray(response.body.items)).toBe(true);
+      expect(response.body.items.length).toBeGreaterThan(0);
 
       // Verify organization structure
-      const org = response.body[0];
+      const org = response.body.items[0];
       expect(org).toHaveProperty('id');
       expect(org).toHaveProperty('name');
       expect(org).toHaveProperty('type');
@@ -193,11 +201,13 @@ describe('Nested Router Example', () => {
     it('should get all departments for an organization', async () => {
       const response = await supertest.get('/api/organizations/org-1/departments');
       expect(response.status).toBe(200);
-      expect(Array.isArray(response.body)).toBe(true);
-      expect(response.body.length).toBeGreaterThan(0);
+      expect(response.body).toHaveProperty('items');
+      expect(response.body).toHaveProperty('metadata');
+      expect(Array.isArray(response.body.items)).toBe(true);
+      expect(response.body.items.length).toBeGreaterThan(0);
 
       // Verify department structure
-      const dept = response.body[0];
+      const dept = response.body.items[0];
       expect(dept).toHaveProperty('id');
       expect(dept).toHaveProperty('name');
       expect(dept).toHaveProperty('budget');
@@ -288,11 +298,13 @@ describe('Nested Router Example', () => {
     it('should get all employees for a department', async () => {
       const response = await supertest.get('/api/organizations/org-1/departments/dept-1/employees');
       expect(response.status).toBe(200);
-      expect(Array.isArray(response.body)).toBe(true);
-      expect(response.body.length).toBeGreaterThan(0);
+      expect(response.body).toHaveProperty('items');
+      expect(response.body).toHaveProperty('metadata');
+      expect(Array.isArray(response.body.items)).toBe(true);
+      expect(response.body.items.length).toBeGreaterThan(0);
 
       // Verify employee structure
-      const emp = response.body[0];
+      const emp = response.body.items[0];
       expect(emp).toHaveProperty('id');
       expect(emp).toHaveProperty('name');
       expect(emp).toHaveProperty('email');
