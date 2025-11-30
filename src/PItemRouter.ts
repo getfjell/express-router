@@ -1,4 +1,4 @@
-import { AllOperationResult, AllOptions, Item, ItemQuery, paramsToQuery, PriKey, QueryParams, validatePK } from "@fjell/core";
+import { AllOptions, FindOperationResult, FindOptions, Item, ItemQuery, paramsToQuery, PriKey, QueryParams, validatePK } from "@fjell/core";
 import { Request, Response } from "express";
 import { ItemRouter, ItemRouterOptions } from "./ItemRouter.js";
 import { Library, NotFoundError } from "@fjell/lib";
@@ -113,26 +113,39 @@ export class PItemRouter<T extends Item<S>, S extends string> extends ItemRouter
           return;
         }
 
-        let items: Item<S>[] = [];
+        // Parse pagination options from query parameters
+        const findOptions: FindOptions | undefined =
+          (req.query.limit || req.query.offset) ? {
+            ...(req.query.limit && { limit: parseInt(req.query.limit as string, 10) }),
+            ...(req.query.offset && { offset: parseInt(req.query.offset as string, 10) }),
+          } : (void 0);
+
         if (one === 'true') {
           const item = await (this.lib as any).findOne(finder, parsedParams);
-          items = item ? [item] : [];
+          // Wrap findOne result in FindOperationResult format
+          const validatedItem = item ? (validatePK(item, this.getPkType()) as Item<S>) : null;
+          const result: FindOperationResult<Item<S>> = {
+            items: validatedItem ? [validatedItem] : [],
+            metadata: {
+              total: validatedItem ? 1 : 0,
+              returned: validatedItem ? 1 : 0,
+              offset: 0,
+              hasMore: false
+            }
+          };
+          res.json(result);
         } else {
-          items = await libOperations.find(finder, parsedParams);
+          // Call find() with pagination options - it returns FindOperationResult
+          const result = await libOperations.find(finder, parsedParams, [], findOptions);
+          
+          // Validate items - validatePK can handle arrays
+          const validatedItems = validatePK(result.items, this.getPkType()) as Item<S>[];
+          
+          res.json({
+            items: validatedItems,
+            metadata: result.metadata
+          });
         }
-
-        // For finder queries, wrap in AllOperationResult format for consistency
-        const validatedItems = items.map((item: Item<S>) => validatePK(item, this.getPkType()));
-        const result: AllOperationResult<Item<S>> = {
-          items: validatedItems,
-          metadata: {
-            total: validatedItems.length,
-            returned: validatedItems.length,
-            offset: 0,
-            hasMore: false
-          }
-        };
-        res.json(result);
       } else {
         // TODO: This is once of the more important places to perform some validaation and feedback
         const itemQuery: ItemQuery = paramsToQuery(req.query as QueryParams);

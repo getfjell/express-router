@@ -155,10 +155,13 @@ describe("CItemRouter", () => {
     });
 
     it('should find items using finder when finder param exists', async () => {
-      mockLib.operations.find.mockResolvedValue(mockItems);
+      mockLib.operations.find.mockResolvedValue({
+        items: mockItems,
+        metadata: { total: mockItems.length, returned: mockItems.length, offset: 0, hasMore: false }
+      });
       req.query = { finder: 'testFinder', finderParams: JSON.stringify({ param: 'value' }) };
       await router['findItems'](req as Request, res as Response);
-      expect(mockLib.operations.find).toHaveBeenCalledWith('testFinder', { param: 'value' }, mockParentLKA);
+      expect(mockLib.operations.find).toHaveBeenCalledWith('testFinder', { param: 'value' }, mockParentLKA, undefined);
       expect(res.json).toHaveBeenCalledWith({
         items: mockItems,
         metadata: expect.objectContaining({ total: 1, returned: 1 })
@@ -202,10 +205,13 @@ describe("CItemRouter", () => {
     });
 
     it('should use find when one parameter is not true', async () => {
-      mockLib.operations.find.mockResolvedValue(mockItems);
+      mockLib.operations.find.mockResolvedValue({
+        items: mockItems,
+        metadata: { total: mockItems.length, returned: mockItems.length, offset: 0, hasMore: false }
+      });
       req.query = { finder: 'testFinder', finderParams: JSON.stringify({ param: 'value' }), one: 'false' };
       await router['findItems'](req as Request, res as Response);
-      expect(mockLib.operations.find).toHaveBeenCalledWith('testFinder', { param: 'value' }, mockParentLKA);
+      expect(mockLib.operations.find).toHaveBeenCalledWith('testFinder', { param: 'value' }, mockParentLKA, undefined);
       expect(mockLib.findOne).not.toHaveBeenCalled();
       expect(res.json).toHaveBeenCalledWith({
         items: mockItems,
@@ -227,17 +233,23 @@ describe("CItemRouter", () => {
     });
 
     it('should handle undefined finderParams', async () => {
-      mockLib.operations.find.mockResolvedValue(mockItems);
+      mockLib.operations.find.mockResolvedValue({
+        items: mockItems,
+        metadata: { total: mockItems.length, returned: mockItems.length, offset: 0, hasMore: false }
+      });
       req.query = { finder: 'testFinder' };
       await router['findItems'](req as Request, res as Response);
-      expect(mockLib.operations.find).toHaveBeenCalledWith('testFinder', {}, mockParentLKA);
+      expect(mockLib.operations.find).toHaveBeenCalledWith('testFinder', {}, mockParentLKA, undefined);
     });
 
     it('should handle null finderParams', async () => {
-      mockLib.operations.find.mockResolvedValue(mockItems);
+      mockLib.operations.find.mockResolvedValue({
+        items: mockItems,
+        metadata: { total: mockItems.length, returned: mockItems.length, offset: 0, hasMore: false }
+      });
       req.query = { finder: 'testFinder', finderParams: null as any };
       await router['findItems'](req as Request, res as Response);
-      expect(mockLib.operations.find).toHaveBeenCalledWith('testFinder', {}, mockParentLKA);
+      expect(mockLib.operations.find).toHaveBeenCalledWith('testFinder', {}, mockParentLKA, undefined);
     });
 
     it('should handle findOne with undefined finderParams', async () => {

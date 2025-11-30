@@ -1,5 +1,5 @@
 import {
-  AllOperationResult, AllOptions, ComKey, Item, ItemQuery, LocKey, LocKeyArray, paramsToQuery, PriKey, QueryParams, validatePK
+  AllOptions, ComKey, FindOperationResult, FindOptions, Item, ItemQuery, LocKey, LocKeyArray, paramsToQuery, PriKey, QueryParams, validatePK
 } from "@fjell/core";
 import { Library, NotFoundError } from "@fjell/lib";
 import { Request, Response } from "express";
@@ -103,26 +103,41 @@ export class CItemRouter<
           return;
         }
 
-        let items: Item<S, L1, L2, L3, L4, L5>[] = [];
-        if (one === 'true') {
-          const item = await (this.lib as any).findOne(finder, parsedParams, this.getLocations(res));
-          items = item ? [item] : [];
-        } else {
-          items = await libOperations.find(finder, parsedParams, this.getLocations(res));
-        }
+        // Parse pagination options from query parameters
+        const findOptions: FindOptions | undefined =
+          (req.query.limit || req.query.offset) ? {
+            ...(req.query.limit && { limit: parseInt(req.query.limit as string, 10) }),
+            ...(req.query.offset && { offset: parseInt(req.query.offset as string, 10) }),
+          } : (void 0);
 
-        // For finder queries, wrap in AllOperationResult format for consistency
-        const validatedItems = items.map((item: Item<S, L1, L2, L3, L4, L5>) => validatePK(item, this.getPkType()));
-        const result: AllOperationResult<Item<S, L1, L2, L3, L4, L5>> = {
-          items: validatedItems,
-          metadata: {
-            total: validatedItems.length,
-            returned: validatedItems.length,
-            offset: 0,
-            hasMore: false
-          }
-        };
-        res.json(result);
+        const locations = this.getLocations(res);
+
+        if (one === 'true') {
+          const item = await (this.lib as any).findOne(finder, parsedParams, locations);
+          // Wrap findOne result in FindOperationResult format
+          const validatedItem = item ? (validatePK(item, this.getPkType()) as Item<S, L1, L2, L3, L4, L5>) : null;
+          const result: FindOperationResult<Item<S, L1, L2, L3, L4, L5>> = {
+            items: validatedItem ? [validatedItem] : [],
+            metadata: {
+              total: validatedItem ? 1 : 0,
+              returned: validatedItem ? 1 : 0,
+              offset: 0,
+              hasMore: false
+            }
+          };
+          res.json(result);
+        } else {
+          // Call find() with pagination options - it returns FindOperationResult
+          const result = await libOperations.find(finder, parsedParams, locations, findOptions);
+          
+          // Validate items - validatePK can handle arrays
+          const validatedItems = validatePK(result.items, this.getPkType()) as Item<S, L1, L2, L3, L4, L5>[];
+          
+          res.json({
+            items: validatedItems,
+            metadata: result.metadata
+          });
+        }
       } else {
         // TODO: This is once of the more important places to perform some validaation and feedback
         const itemQuery: ItemQuery = paramsToQuery(req.query as QueryParams);
