@@ -34,10 +34,10 @@
     "docs:test": "cd docs && npm run test"
   },
   "dependencies": {
-    "@fjell/core": "^4.4.68",
-    "@fjell/lib": "^4.4.78",
-    "@fjell/logging": "^4.4.59",
-    "@fjell/registry": "^4.4.75",
+    "@fjell/core": "^4.4.69",
+    "@fjell/lib": "^4.4.79",
+    "@fjell/logging": "^4.4.60",
+    "@fjell/registry": "^4.4.76",
     "deepmerge": "^4.3.1",
     "express": "^5.1.0"
   },
