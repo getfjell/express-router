@@ -89,11 +89,6 @@ export class PItemRouter<T extends Item<S>, S extends string> extends ItemRouter
   };
 
   protected findItems = async (req: Request, res: Response) => {
-    console.log('=== FIND ITEMS CALLED ===');
-    console.log('Query:', JSON.stringify(req.query));
-    console.log('Path:', req.path);
-    console.log('Method:', req.method);
-
     const libOperations = this.lib.operations;
     this.logger.default('Finding Items', { query: req.query, params: req.params, locals: res.locals });
 
@@ -104,11 +99,6 @@ export class PItemRouter<T extends Item<S>, S extends string> extends ItemRouter
       const one = query['one'] as string;
 
       if (finder) {
-        // If finder is defined?  Call a finder.
-        console.log('=== FINDER REQUEST ===');
-        console.log('Finder:', finder);
-        console.log('Finder Params:', finderParams);
-        console.log('One:', one);
         this.logger.default('Finding Items with Finder %s %j one:%s', finder, finderParams, one);
 
         let parsedParams: any;
@@ -144,20 +134,10 @@ export class PItemRouter<T extends Item<S>, S extends string> extends ItemRouter
           };
           res.json(result);
         } else {
-          // Call find() with pagination options - it returns FindOperationResult
-          console.log('=== CALLING libOperations.find ===');
-          console.log('Finder:', finder);
-          console.log('Parsed Params:', JSON.stringify(parsedParams));
-          console.log('Find Options:', JSON.stringify(findOptions));
 
           let result: FindOperationResult<Item<S>>;
           try {
-            console.log('About to call libOperations.find...');
             result = await libOperations.find(finder, parsedParams, [], findOptions);
-            console.log('libOperations.find SUCCESS - got result:', {
-              itemCount: result?.items?.length,
-              total: result?.metadata?.total
-            });
           } catch (findError: any) {
             console.error('=== ERROR IN libOperations.find ===');
             console.error('Error:', findError);
@@ -175,14 +155,9 @@ export class PItemRouter<T extends Item<S>, S extends string> extends ItemRouter
             throw findError;
           }
 
-          // Validate items - validatePK can handle arrays
-          console.log('=== VALIDATING ITEMS ===');
-          console.log('Item count:', result.items?.length);
-
           let validatedItems: Item<S>[];
           try {
             validatedItems = validatePK(result.items, this.getPkType()) as Item<S>[];
-            console.log('Validation SUCCESS - validated items:', validatedItems.length);
           } catch (validationError: any) {
             console.error('=== ERROR IN VALIDATION ===');
             console.error('Validation Error:', validationError);
@@ -199,16 +174,11 @@ export class PItemRouter<T extends Item<S>, S extends string> extends ItemRouter
             throw validationError;
           }
 
-          console.log('=== SENDING RESPONSE ===');
-          console.log('Items:', validatedItems.length);
-          console.log('Metadata:', JSON.stringify(result.metadata));
-
           res.json({
             items: validatedItems,
             metadata: result.metadata
           });
 
-          console.log('=== RESPONSE SENT ===');
         }
       } else {
         // TODO: This is once of the more important places to perform some validaation and feedback
