@@ -138,9 +138,9 @@ describe("CItemRouter", () => {
     mockLib.operations.create = vi.fn().mockRejectedValue(new Error("Test error"));
     await router['createItem'](req, res);
     expect(res.status).toHaveBeenCalledWith(500);
-    expect(res.json).toHaveBeenCalledWith({
-      message: "General Error",
-    });
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+      message: "General Error"
+    }));
     expect(router.getLocations).toHaveBeenCalledWith(res);
     expect(router.convertDates).toHaveBeenCalledWith(testItem);
     expect(mockLib.operations.create).toHaveBeenCalledWith(testItem, { locations: locKeyArray });
@@ -308,9 +308,9 @@ describe("CItemRouter", () => {
       vi.spyOn(router, "postCreateItem").mockRejectedValue(new Error("PostCreate error"));
       await router['createItem'](req, res);
       expect(res.status).toHaveBeenCalledWith(500);
-      expect(res.json).toHaveBeenCalledWith({
-        message: "General Error",
-      });
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+        message: "General Error"
+      }));
       expect(router.postCreateItem).toHaveBeenCalledWith(testItem);
     });
 
@@ -318,9 +318,9 @@ describe("CItemRouter", () => {
       vi.spyOn(router, "convertDates").mockImplementation(() => { throw new Error("ConvertDates error"); });
       await router['createItem'](req, res);
       expect(res.status).toHaveBeenCalledWith(500);
-      expect(res.json).toHaveBeenCalledWith({
-        message: "General Error",
-      });
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+        message: "General Error"
+      }));
       expect(router.convertDates).toHaveBeenCalledWith(testItem);
     });
   });

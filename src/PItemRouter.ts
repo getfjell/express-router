@@ -34,15 +34,24 @@ export class PItemRouter<T extends Item<S>, S extends string> extends ItemRouter
       // Also check error.cause since errors may be wrapped
       const originalError = error?.cause || error;
 
-      // Log error details for debugging
-      this.logger.error('Error in createItem', {
+      // Log structured error details for agentic debugging
+      this.logger.error('Error in createItem endpoint', {
+        component: 'PItemRouter',
+        operation: 'createItem',
+        endpoint: req.path,
+        method: req.method,
+        itemType: this.getPkType(),
+        requestBody: JSON.stringify(req.body),
         error,
         errorName: error?.name,
         errorMessage: error?.message,
+        errorCode: error?.errorInfo?.code || error?.code,
         originalErrorName: originalError?.name,
         originalErrorMessage: originalError?.message,
-        errorCode: error?.errorInfo?.code,
-        originalErrorCode: originalError?.errorInfo?.code
+        originalErrorCode: originalError?.errorInfo?.code || originalError?.code,
+        validationErrors: error?.errorInfo?.details?.fieldErrors || originalError?.errorInfo?.details?.fieldErrors,
+        suggestion: 'Check request body validation, required fields, unique constraints, and data types',
+        stack: error?.stack
       });
       const isValidationError =
         error.name === 'CreateValidationError' ||
