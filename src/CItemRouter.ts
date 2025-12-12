@@ -65,7 +65,24 @@ export class CItemRouter<
       this.logger.default('Created Item %j', item);
       res.status(201).json(item);
     } catch (error: any) {
-      this.logger.error('Error in createItem', { error });
+      // Log structured error details for agentic debugging
+      this.logger.error('Error in createItem endpoint', {
+        component: 'CItemRouter',
+        operation: 'createItem',
+        endpoint: req.path,
+        method: req.method,
+        itemType: this.getPkType(),
+        requestBody: JSON.stringify(req.body),
+        locations: JSON.stringify(this.getLocations(res)),
+        errorType: error?.constructor?.name || typeof error,
+        errorName: error?.name,
+        errorMessage: error?.message,
+        errorCode: error?.errorInfo?.code || error?.code,
+        validationErrors: error?.errorInfo?.details?.fieldErrors,
+        suggestion: 'Check request body validation, required fields, parent locations, unique constraints, and data types',
+        stack: error?.stack
+      });
+      
       // Check for validation errors
       if (error.name === 'CreateValidationError' || error.name === 'ValidationError' ||
           error.name === 'SequelizeValidationError' ||
@@ -73,9 +90,15 @@ export class CItemRouter<
            error.message.includes('required') ||
            error.message.includes('cannot be null') ||
            error.message.includes('notNull Violation')))) {
-        res.status(400).json({ message: "Validation Error" });
+        res.status(400).json({
+          message: "Validation Error",
+          details: error?.errorInfo?.details?.fieldErrors || error?.message
+        });
       } else {
-        res.status(500).json({ message: "General Error" });
+        res.status(500).json({
+          message: "General Error",
+          error: error?.message
+        });
       }
     }
   };
