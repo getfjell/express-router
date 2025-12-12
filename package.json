@@ -1,7 +1,7 @@
 {
   "name": "@fjell/express-router",
   "description": "Express Router for Fjell",
-  "version": "4.4.77",
+  "version": "4.4.78-dev.0",
   "keywords": [
     "express",
     "router",
