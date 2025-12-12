@@ -1,9 +1,0 @@
-{
-  "extends": "@fjell/docs-template/tsconfig.docs.json",
-  "include": [
-    "src"
-  ],
-  "compilerOptions": {
-    "types": []
-  }
-}

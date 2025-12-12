@@ -232,10 +232,23 @@ export class FjellErrorHandler {
       statusCode = this.getHttpStatusForError(errorInfo.code);
     }
 
-    // Log the error if configured
+    // Log the error if configured - structured for agentic debugging
     if (this.options.logErrors) {
-      logger.error('Request error', {
-        errorInfo,
+      logger.error('HTTP request error', {
+        component: 'FjellErrorHandler',
+        operation: 'handle',
+        endpoint: req.path,
+        method: req.method,
+        statusCode,
+        errorCode: errorInfo.code,
+        errorMessage: errorInfo.message,
+        operationType: errorInfo.operation?.type,
+        operationName: errorInfo.operation?.name,
+        itemType: errorInfo.context?.itemType,
+        requestId: this.getRequestId(req),
+        validOptions: errorInfo.details?.validOptions,
+        suggestedAction: errorInfo.details?.suggestedAction,
+        retryable: errorInfo.details?.retryable,
         request: {
           method: req.method,
           path: req.path,
@@ -243,7 +256,9 @@ export class FjellErrorHandler {
           body: req.body,
           query: req.query,
           params: req.params
-        }
+        },
+        suggestion: errorInfo.details?.suggestedAction || 'Check request parameters, authentication, and data validation',
+        errorInfo
       });
     }
 
